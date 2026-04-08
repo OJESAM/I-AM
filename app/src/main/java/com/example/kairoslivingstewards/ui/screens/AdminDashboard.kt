@@ -1,0 +1,197 @@
+package com.example.kairoslivingstewards.ui.screens
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.kairoslivingstewards.data.local.entities.DevotionalEntity
+import com.example.kairoslivingstewards.ui.viewmodel.DevotionalViewModel
+import com.example.kairoslivingstewards.ui.viewmodel.FellowshipViewModel
+import com.example.kairoslivingstewards.ui.viewmodel.LivestreamViewModel
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AdminDashboard(
+    devotionalViewModel: DevotionalViewModel,
+    fellowshipViewModel: FellowshipViewModel,
+    livestreamViewModel: LivestreamViewModel
+) {
+    var currentTab by remember { mutableIntStateOf(0) }
+    val tabs = listOf("Content", "Fellowships", "Livestream", "Moderation")
+
+    Scaffold(
+        topBar = {
+            LargeTopAppBar(
+                title = { Text("IAM Admin Console", fontWeight = FontWeight.ExtraBold) }
+            )
+        }
+    ) { paddingValues ->
+        Column(modifier = Modifier.padding(paddingValues)) {
+            ScrollableTabRow(selectedTabIndex = currentTab, edgePadding = 16.dp) {
+                tabs.forEachIndexed { index, title ->
+                    Tab(
+                        selected = currentTab == index,
+                        onClick = { currentTab = index },
+                        text = { Text(title) }
+                    )
+                }
+            }
+
+            when (currentTab) {
+                0 -> DevotionalManagement(devotionalViewModel)
+                1 -> FellowshipManagement(fellowshipViewModel)
+                2 -> LivestreamManagement(livestreamViewModel)
+                3 -> ModerationPanel(fellowshipViewModel)
+            }
+        }
+    }
+}
+
+@Composable
+fun DevotionalManagement(viewModel: DevotionalViewModel) {
+    val devotionals by viewModel.devotionals.collectAsStateWithLifecycle()
+    var showAddDialog by remember { mutableStateOf(false) }
+
+    LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        item {
+            Button(
+                onClick = { showAddDialog = true },
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+            ) {
+                Icon(Icons.Rounded.Add, contentDescription = null)
+                Text("Add New Devotional")
+            }
+        }
+        items(devotionals) { devotional ->
+            ListItem(
+                headlineContent = { Text(devotional.title) },
+                supportingContent = { Text(devotional.category) },
+                trailingContent = {
+                    IconButton(onClick = { viewModel.deleteDevotional(devotional) }) {
+                        Icon(Icons.Rounded.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
+                    }
+                }
+            )
+        }
+    }
+    
+    if (showAddDialog) {
+        AddDevotionalDialog(
+            onDismiss = { showAddDialog = false },
+            onAdd = { newDevotional: DevotionalEntity ->
+                viewModel.addDevotional(
+                    title = newDevotional.title,
+                    content = newDevotional.content,
+                    scripture = newDevotional.scripture,
+                    category = newDevotional.category,
+                    imageUrl = newDevotional.imageUrl
+                )
+                showAddDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+fun FellowshipManagement(viewModel: FellowshipViewModel) {
+    val fellowships by viewModel.allFellowships.collectAsStateWithLifecycle()
+    var showAddDialog by remember { mutableStateOf(false) }
+
+    LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        item {
+            Button(
+                onClick = { showAddDialog = true },
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+            ) {
+                Icon(Icons.Rounded.Groups, contentDescription = null)
+                Text("Create New Fellowship")
+            }
+        }
+        items(fellowships) { fellowship ->
+            ListItem(
+                headlineContent = { Text(fellowship.name) },
+                supportingContent = { Text("Code: ${fellowship.inviteCode}") },
+                trailingContent = {
+                    Icon(Icons.Rounded.ChevronRight, contentDescription = null)
+                }
+            )
+        }
+    }
+
+    if (showAddDialog) {
+        AdminAddFellowshipDialog(
+            onDismiss = { showAddDialog = false },
+            onAdd = { name, desc, leaderId -> 
+                viewModel.createFellowship(name, desc, leaderId)
+                showAddDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+fun LivestreamManagement(viewModel: LivestreamViewModel) {
+    val settings by viewModel.settings.collectAsStateWithLifecycle()
+    var videoId by remember(settings) { mutableStateOf(settings?.youtubeVideoId ?: "") }
+    var commentsEnabled by remember(settings) { mutableStateOf(settings?.commentsEnabled ?: true) }
+
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        OutlinedTextField(
+            value = videoId,
+            onValueChange = { videoId = it },
+            label = { Text("YouTube Live Video ID") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Enable Live Chat", modifier = Modifier.weight(1f))
+            Switch(checked = commentsEnabled, onCheckedChange = { commentsEnabled = it })
+        }
+        Button(
+            onClick = { viewModel.updateSettings(videoId, commentsEnabled) },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(Icons.Rounded.Save, contentDescription = null)
+            Text("Save & Update Stream")
+        }
+    }
+}
+
+@Composable
+fun ModerationPanel(viewModel: FellowshipViewModel) {
+    val posts by viewModel.allPosts.collectAsStateWithLifecycle()
+
+    LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        item {
+            Text(
+                "Global Post Moderation",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+        }
+        items(posts) { post ->
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                ListItem(
+                    headlineContent = { Text(post.content) },
+                    supportingContent = { Text("By ${post.userName} in ${post.fellowshipId}") },
+                    trailingContent = {
+                        IconButton(onClick = { viewModel.deletePost(post) }) {
+                            Icon(Icons.Rounded.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                )
+            }
+        }
+    }
+}

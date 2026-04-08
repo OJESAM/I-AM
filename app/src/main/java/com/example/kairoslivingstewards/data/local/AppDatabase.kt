@@ -15,9 +15,10 @@ import com.example.kairoslivingstewards.data.local.entities.*
         FellowshipEntity::class,
         FellowshipMemberEntity::class,
         FellowshipPostEntity::class,
-        NoteEntity::class
+        NoteEntity::class,
+        DirectMessageEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -28,4 +29,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
     abstract fun fellowshipDao(): FellowshipDao
     abstract fun noteDao(): NoteDao
+    abstract fun directMessageDao(): DirectMessageDao
 }

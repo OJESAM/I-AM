@@ -248,6 +248,7 @@ fun FellowshipDetailScreen(
     )
 
     val isLeader = currentUser.id == fellowship.leaderId
+    val isMember = members.any { it.first.userId == currentUser.id } || isLeader
     val context = LocalContext.current
 
     Scaffold(
@@ -276,7 +277,7 @@ fun FellowshipDetailScreen(
                     }) {
                         Icon(Icons.Rounded.Share, contentDescription = "Share Invite")
                     }
-                    if (isLeader) {
+                    if (isLeader || currentUser.role == "ADMIN") {
                         IconButton(onClick = { showMemberManagement = true }) {
                             Icon(Icons.Rounded.ManageAccounts, contentDescription = "Manage Members")
                         }
@@ -285,55 +286,71 @@ fun FellowshipDetailScreen(
             )
         },
         bottomBar = {
-            Surface(tonalElevation = 3.dp) {
-                Column {
-                    if (selectedMediaUri != null) {
-                        Box(modifier = Modifier.padding(8.dp).size(80.dp)) {
-                            AsyncImage(
-                                model = selectedMediaUri,
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize().clip(MaterialTheme.shapes.small),
-                                contentScale = ContentScale.Crop
+            if (isMember || currentUser.role == "ADMIN") {
+                Surface(tonalElevation = 3.dp) {
+                    Column {
+                        if (selectedMediaUri != null) {
+                            Box(modifier = Modifier.padding(8.dp).size(80.dp)) {
+                                AsyncImage(
+                                    model = selectedMediaUri,
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize().clip(MaterialTheme.shapes.small),
+                                    contentScale = ContentScale.Crop
+                                )
+                                IconButton(
+                                    onClick = { selectedMediaUri = null },
+                                    modifier = Modifier.align(Alignment.TopEnd).size(24.dp).padding(4.dp)
+                                ) {
+                                    Icon(Icons.Rounded.Close, contentDescription = "Remove media", tint = Color.White)
+                                }
+                            }
+                        }
+                        Row(
+                            modifier = Modifier.padding(8.dp).fillMaxWidth().imePadding(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(onClick = {
+                                mediaPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
+                            }) {
+                                Icon(Icons.Rounded.AddPhotoAlternate, contentDescription = "Add Media")
+                            }
+                            OutlinedTextField(
+                                value = postText,
+                                onValueChange = { postText = it },
+                                modifier = Modifier.weight(1f),
+                                placeholder = { Text("Post something...") },
+                                shape = MaterialTheme.shapes.medium
                             )
-                            IconButton(
-                                onClick = { selectedMediaUri = null },
-                                modifier = Modifier.align(Alignment.TopEnd).size(24.dp).padding(4.dp)
-                            ) {
-                                Icon(Icons.Rounded.Close, contentDescription = "Remove media", tint = Color.White)
+                            IconButton(onClick = {
+                                if (postText.isNotBlank() || selectedMediaUri != null) {
+                                    viewModel.postToFellowship(
+                                        fellowship.id,
+                                        currentUser.id,
+                                        currentUser.username,
+                                        postText,
+                                        selectedMediaUri?.toString()
+                                    )
+                                    postText = ""
+                                    selectedMediaUri = null
+                                }
+                            }) {
+                                Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = "Post")
                             }
                         }
                     }
-                    Row(
-                        modifier = Modifier.padding(8.dp).fillMaxWidth().imePadding(),
-                        verticalAlignment = Alignment.CenterVertically
+                }
+            } else {
+                Surface(tonalElevation = 3.dp) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp).imePadding(),
+                        contentAlignment = Alignment.Center
                     ) {
-                        IconButton(onClick = {
-                            mediaPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
-                        }) {
-                            Icon(Icons.Rounded.AddPhotoAlternate, contentDescription = "Add Media")
-                        }
-                        OutlinedTextField(
-                            value = postText,
-                            onValueChange = { postText = it },
-                            modifier = Modifier.weight(1f),
-                            placeholder = { Text("Post something...") },
-                            shape = MaterialTheme.shapes.medium
+                        Text(
+                            "Join this fellowship to participate in the chat",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
                         )
-                        IconButton(onClick = {
-                            if (postText.isNotBlank() || selectedMediaUri != null) {
-                                viewModel.postToFellowship(
-                                    fellowship.id,
-                                    currentUser.id,
-                                    currentUser.username,
-                                    postText,
-                                    selectedMediaUri?.toString()
-                                )
-                                postText = ""
-                                selectedMediaUri = null
-                            }
-                        }) {
-                            Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = "Post")
-                        }
                     }
                 }
             }

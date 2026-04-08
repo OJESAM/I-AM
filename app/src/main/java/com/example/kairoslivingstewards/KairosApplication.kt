@@ -32,7 +32,7 @@ class KairosApplication : Application() {
                 this,
                 AppDatabase::class.java,
                 "kairos_database"
-            ).fallbackToDestructiveMigration(false)
+            ).fallbackToDestructiveMigration(true)
             .build()
     }
 }

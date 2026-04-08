@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.kairoslivingstewards.data.local.entities.FellowshipEntity
 import com.example.kairoslivingstewards.data.local.entities.FellowshipMemberEntity
 import com.example.kairoslivingstewards.data.local.entities.FellowshipPostEntity
+import com.example.kairoslivingstewards.data.local.entities.UserEntity
 import com.example.kairoslivingstewards.data.repository.FellowshipRepository
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -41,6 +42,9 @@ class FellowshipViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val allPosts: StateFlow<List<FellowshipPostEntity>> = repository.getAllPosts()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val allUsers: StateFlow<List<UserEntity>> = repository.getAllUsers()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _currentFellowshipPosts = MutableStateFlow<List<FellowshipPostEntity>>(emptyList())
@@ -94,6 +98,12 @@ class FellowshipViewModel(
     fun deletePost(post: FellowshipPostEntity) {
         viewModelScope.launch {
             repository.deletePost(post)
+        }
+    }
+
+    fun updateUserRole(userId: String, role: String) {
+        viewModelScope.launch {
+            repository.updateUserRole(userId, role)
         }
     }
 

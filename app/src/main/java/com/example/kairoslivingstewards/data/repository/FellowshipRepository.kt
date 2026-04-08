@@ -4,6 +4,7 @@ import com.example.kairoslivingstewards.data.local.dao.FellowshipDao
 import com.example.kairoslivingstewards.data.local.entities.FellowshipEntity
 import com.example.kairoslivingstewards.data.local.entities.FellowshipMemberEntity
 import com.example.kairoslivingstewards.data.local.entities.FellowshipPostEntity
+import com.example.kairoslivingstewards.data.local.entities.UserEntity
 import com.example.kairoslivingstewards.data.model.FellowshipCell
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.functions.FirebaseFunctions
@@ -146,6 +147,20 @@ class FellowshipRepository(
 
     suspend fun deletePost(post: FellowshipPostEntity) {
         db.collection("fellowship_posts").document(post.id).delete().await()
+    }
+
+    fun getAllUsers(): Flow<List<UserEntity>> = callbackFlow {
+        val subscription = db.collection("users").addSnapshotListener { snapshot, _ ->
+            if (snapshot != null) {
+                val users = snapshot.toObjects(UserEntity::class.java)
+                trySend(users)
+            }
+        }
+        awaitClose { subscription.remove() }
+    }
+
+    suspend fun updateUserRole(userId: String, role: String) {
+        db.collection("users").document(userId).update("role", role).await()
     }
 
     fun saveLeader(cell: FellowshipCell) {}

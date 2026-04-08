@@ -47,6 +47,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.core.content.ContextCompat
 import androidx.compose.runtime.LaunchedEffect
+import com.example.kairoslivingstewards.ui.screens.DirectMessageScreen
+import com.example.kairoslivingstewards.ui.viewmodel.DirectMessageViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -95,6 +97,7 @@ fun MainScreen(factory: ViewModelFactory, authViewModel: AuthViewModel, currentU
     val devotionalViewModel: DevotionalViewModel = viewModel(factory = factory)
     val fellowshipViewModel: FellowshipViewModel = viewModel(factory = factory)
     val livestreamViewModel: LivestreamViewModel = viewModel(factory = factory)
+    val dmViewModel: DirectMessageViewModel = viewModel(factory = factory)
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -132,21 +135,18 @@ fun MainScreen(factory: ViewModelFactory, authViewModel: AuthViewModel, currentU
             composable(Screen.Fellowship.route) { 
                 FellowshipScreen(fellowshipViewModel, currentUser) 
             }
+            composable(Screen.Messages.route) {
+                DirectMessageScreen(dmViewModel, currentUser)
+            }
             composable(Screen.Livestream.route) { 
                 LivestreamScreen(livestreamViewModel) 
             }
             composable(Screen.Settings.route) {
-                if (currentUser.role == "ADMIN") {
-                    AdminDashboard(
-                        devotionalViewModel = devotionalViewModel,
-                        fellowshipViewModel = fellowshipViewModel,
-                        livestreamViewModel = livestreamViewModel
-                    )
-                } else {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Only Admins can access the Admin Dashboard")
-                    }
-                }
+                AdminDashboard(
+                    devotionalViewModel = devotionalViewModel,
+                    fellowshipViewModel = fellowshipViewModel,
+                    livestreamViewModel = livestreamViewModel
+                )
             }
         }
     }

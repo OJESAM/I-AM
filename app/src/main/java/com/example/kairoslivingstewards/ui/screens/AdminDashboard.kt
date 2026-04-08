@@ -25,7 +25,7 @@ fun AdminDashboard(
     livestreamViewModel: LivestreamViewModel
 ) {
     var currentTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Content", "Fellowships", "Livestream", "Moderation")
+    val tabs = listOf("Content", "Fellowships", "Livestream", "Users", "Moderation")
 
     Scaffold(
         topBar = {
@@ -49,7 +49,66 @@ fun AdminDashboard(
                 0 -> DevotionalManagement(devotionalViewModel)
                 1 -> FellowshipManagement(fellowshipViewModel)
                 2 -> LivestreamManagement(livestreamViewModel)
-                3 -> ModerationPanel(fellowshipViewModel)
+                3 -> UserManagement(fellowshipViewModel)
+                4 -> ModerationPanel(fellowshipViewModel)
+            }
+        }
+    }
+}
+
+@Composable
+fun UserManagement(viewModel: FellowshipViewModel) {
+    val users by viewModel.allUsers.collectAsStateWithLifecycle()
+
+    LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        item {
+            Text(
+                "User Control",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+        }
+        items(users) { user ->
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            ) {
+                ListItem(
+                    headlineContent = { Text(user.username) },
+                    supportingContent = { Text("${user.contact} • Role: ${user.role}") },
+                    trailingContent = {
+                        var showMenu by remember { mutableStateOf(false) }
+                        Box {
+                            IconButton(onClick = { showMenu = true }) {
+                                Icon(Icons.Rounded.MoreVert, contentDescription = "Options")
+                            }
+                            DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                                DropdownMenuItem(
+                                    text = { Text("Make ADMIN") },
+                                    onClick = { 
+                                        viewModel.updateUserRole(user.id, "ADMIN")
+                                        showMenu = false 
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Make USER") },
+                                    onClick = { 
+                                        viewModel.updateUserRole(user.id, "USER")
+                                        showMenu = false 
+                                    }
+                                )
+                                HorizontalDivider()
+                                DropdownMenuItem(
+                                    text = { Text("Delete User", color = MaterialTheme.colorScheme.error) },
+                                    onClick = { 
+                                        // Implementation for deleting user
+                                        showMenu = false 
+                                    }
+                                )
+                            }
+                        }
+                    }
+                )
             }
         }
     }

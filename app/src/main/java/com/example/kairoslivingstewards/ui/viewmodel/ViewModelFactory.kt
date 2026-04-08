@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.kairoslivingstewards.KairosApplication
 import com.example.kairoslivingstewards.data.repository.AuthRepository
 import com.example.kairoslivingstewards.data.repository.DevotionalRepository
+import com.example.kairoslivingstewards.data.repository.DirectMessageRepository
 import com.example.kairoslivingstewards.data.repository.FellowshipRepository
 import com.example.kairoslivingstewards.data.repository.LivestreamRepository
 
@@ -23,6 +24,9 @@ class ViewModelFactory(private val application: KairosApplication) : ViewModelPr
             }
             modelClass.isAssignableFrom(LivestreamViewModel::class.java) -> {
                 LivestreamViewModel(LivestreamRepository(db.livestreamSettingsDao(), db.commentDao(), db.noteDao())) as T
+            }
+            modelClass.isAssignableFrom(DirectMessageViewModel::class.java) -> {
+                DirectMessageViewModel(DirectMessageRepository(db.directMessageDao())) as T
             }
             else -> throw IllegalArgumentException("Unknown ViewModel class")
         }

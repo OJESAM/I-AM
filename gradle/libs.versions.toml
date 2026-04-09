@@ -48,6 +48,8 @@ firebaseCrashlytics = "19.4.1"
 firebaseCrashlyticsPlugin = "3.0.3"
 firebaseFunctions = "21.1.0"
 firebaseMessaging = "24.1.0"
+firebaseAnalytics = "22.5.0"
+coreSplashScreen = "1.2.0"
 
 kotlinxCoroutinesPlayServices = "1.10.2"
 
@@ -106,6 +108,8 @@ firebase-appcheck-debug = { group = "com.google.firebase", name = "firebase-appc
 firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics-ktx", version.ref = "firebaseCrashlytics" }
 firebase-functions = { group = "com.google.firebase", name = "firebase-functions-ktx", version.ref = "firebaseFunctions" }
 firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging-ktx", version.ref = "firebaseMessaging" }
+firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics-ktx", version.ref = "firebaseAnalytics" }
+androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "coreSplashScreen" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

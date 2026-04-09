@@ -8,6 +8,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.kairoslivingstewards.data.local.entities.DevotionalEntity
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.UUID
 
 @Composable
@@ -46,6 +49,8 @@ fun AddDevotionalDialog(
         confirmButton = {
             TextButton(
                 onClick = {
+                    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                    val currentDate = sdf.format(Date())
                     onAdd(
                         DevotionalEntity(
                             id = UUID.randomUUID().toString(),
@@ -54,7 +59,7 @@ fun AddDevotionalDialog(
                             scripture = scripture,
                             category = category,
                             imageUrl = if (imageUrl.isBlank()) null else imageUrl,
-                            date = "Today",
+                            date = currentDate,
                             timestamp = System.currentTimeMillis()
                         )
                     )

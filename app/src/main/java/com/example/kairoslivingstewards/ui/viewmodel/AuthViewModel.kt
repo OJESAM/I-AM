@@ -64,4 +64,22 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
             _authState.value = AuthState.Unauthenticated
         }
     }
+
+    fun resetPassword(email: String) {
+        viewModelScope.launch {
+            _authState.value = AuthState.Loading
+            val success = repository.resetPassword(email)
+            if (success) {
+                _authState.value = AuthState.Idle // Or a specific success state
+            } else {
+                _authState.value = AuthState.Error("Password reset failed")
+            }
+        }
+    }
+
+    fun updateProfile(username: String, profileImageUrl: String) {
+        viewModelScope.launch {
+            repository.updateProfile(username, profileImageUrl)
+        }
+    }
 }

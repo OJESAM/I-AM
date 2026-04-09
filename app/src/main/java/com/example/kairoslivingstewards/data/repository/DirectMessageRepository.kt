@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import java.util.UUID
+import kotlin.collections.emptyList
 
 class DirectMessageRepository(private val directMessageDao: DirectMessageDao) {
     private val db = FirebaseFirestore.getInstance()
@@ -43,5 +44,29 @@ class DirectMessageRepository(private val directMessageDao: DirectMessageDao) {
 
     suspend fun getAllUsers(): List<UserEntity> {
         return db.collection("users").get().await().toObjects(UserEntity::class.java)
+    }
+
+    suspend fun getRecentChatUsers(currentUserId: String): List<UserEntity> {
+        // In a real app, you'd query a "conversations" collection or aggregate messages.
+        // For simplicity with the current structure, we'll fetch unique participant IDs from messages.
+        val sentMessages = db.collection("direct_messages")
+            .whereEqualTo("senderId", currentUserId)
+            .get().await().toObjects(DirectMessageEntity::class.java)
+        
+        val receivedMessages = db.collection("direct_messages")
+            .whereEqualTo("receiverId", currentUserId)
+            .get().await().toObjects(DirectMessageEntity::class.java)
+
+        val otherUserIds = (sentMessages.map { it.receiverId } + receivedMessages.map { it.senderId })
+            .distinct()
+            .filter { it != currentUserId }
+
+        if (otherUserIds.isEmpty()) return emptyList()
+
+        // Fetch user details for these IDs
+        // Firestore 'whereIn' is limited to 10-30 items depending on version, but good for start
+        return db.collection("users")
+            .whereIn("id", otherUserIds)
+            .get().await().toObjects(UserEntity::class.java)
     }
 }

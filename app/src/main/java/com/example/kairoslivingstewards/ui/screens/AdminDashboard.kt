@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.kairoslivingstewards.data.local.entities.DevotionalEntity
+import com.example.kairoslivingstewards.data.local.entities.UserEntity
 import com.example.kairoslivingstewards.ui.viewmodel.DevotionalViewModel
 import com.example.kairoslivingstewards.ui.viewmodel.FellowshipViewModel
 import com.example.kairoslivingstewards.ui.viewmodel.LivestreamViewModel
@@ -22,15 +23,26 @@ import com.example.kairoslivingstewards.ui.viewmodel.LivestreamViewModel
 fun AdminDashboard(
     devotionalViewModel: DevotionalViewModel,
     fellowshipViewModel: FellowshipViewModel,
-    livestreamViewModel: LivestreamViewModel
+    livestreamViewModel: LivestreamViewModel,
+    currentUser: UserEntity
 ) {
     var currentTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Content", "Fellowships", "Livestream", "Users", "Moderation")
+    
+    val tabs = remember(currentUser.role) {
+        mutableListOf("Content", "Fellowships", "Livestream").apply {
+            if (currentUser.role == "ADMIN") {
+                add("Users")
+                add("Moderation")
+            } else if (currentUser.role == "LEADER") {
+                add("Moderation")
+            }
+        }.toList()
+    }
 
     Scaffold(
         topBar = {
             LargeTopAppBar(
-                title = { Text("IAM Admin Console", fontWeight = FontWeight.ExtraBold) }
+                title = { Text("I AM Management", fontWeight = FontWeight.ExtraBold) }
             )
         }
     ) { paddingValues ->
@@ -45,12 +57,13 @@ fun AdminDashboard(
                 }
             }
 
-            when (currentTab) {
-                0 -> DevotionalManagement(devotionalViewModel)
-                1 -> FellowshipManagement(fellowshipViewModel)
-                2 -> LivestreamManagement(livestreamViewModel)
-                3 -> UserManagement(fellowshipViewModel)
-                4 -> ModerationPanel(fellowshipViewModel)
+            val selectedTabName = tabs.getOrNull(currentTab)
+            when (selectedTabName) {
+                "Content" -> DevotionalManagement(devotionalViewModel)
+                "Fellowships" -> FellowshipManagement(fellowshipViewModel)
+                "Livestream" -> LivestreamManagement(livestreamViewModel)
+                "Users" -> UserManagement(fellowshipViewModel)
+                "Moderation" -> ModerationPanel(fellowshipViewModel)
             }
         }
     }
@@ -87,6 +100,13 @@ fun UserManagement(viewModel: FellowshipViewModel) {
                                     text = { Text("Make ADMIN") },
                                     onClick = { 
                                         viewModel.updateUserRole(user.id, "ADMIN")
+                                        showMenu = false 
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Make LEADER") },
+                                    onClick = { 
+                                        viewModel.updateUserRole(user.id, "LEADER")
                                         showMenu = false 
                                     }
                                 )
@@ -188,7 +208,7 @@ fun FellowshipManagement(viewModel: FellowshipViewModel) {
     if (showAddDialog) {
         AdminAddFellowshipDialog(
             onDismiss = { showAddDialog = false },
-            onAdd = { name, desc, leaderId -> 
+            onAdd = { name: String, desc: String, leaderId: String -> 
                 viewModel.createFellowship(name, desc, leaderId)
                 showAddDialog = false
             }

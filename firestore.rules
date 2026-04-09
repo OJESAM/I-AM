@@ -2,67 +2,81 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
-    function isAuthenticated() { return request.auth != null; }
-    function getUserRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    // --- Helper Functions ---
+    function isAuthenticated() {
+      return request.auth != null;
     }
-    function isAdmin() { return getUserRole() == "ADMIN"; }
 
-    // User Profiles
+    function getUserData() {
+      // Note: This helper counts as a read operation
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && getUserData().role == "ADMIN";
+    }
+
+    // --- Collections ---
+
+    // User Profiles: Users can read all profiles, but only write their own.
+    // Protection: Users cannot change their own 'role' or 'isVerified' status.
     match /users/{userId} {
       allow read: if isAuthenticated();
-      allow write: if request.auth.uid == userId;
+      allow create: if isAuthenticated() && request.auth.uid == userId
+                    && request.resource.data.role == "USER"
+                    && request.resource.data.isVerified == false;
+      allow update: if isAuthenticated() && (
+        (request.auth.uid == userId &&
+         request.resource.data.role == resource.data.role &&
+         request.resource.data.isVerified == resource.data.isVerified) ||
+        isAdmin()
+      );
+      allow delete: if isAdmin();
     }
 
-    // Fellowships (Write via Functions only, Read if member or Admin)
+    // Devotionals: Read access for all users. Writes are restricted to Admins.
+    match /devotionals/{devotionalId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Direct Messages: Private. Only sender or receiver can read.
+    match /direct_messages/{messageId} {
+      allow read: if isAuthenticated() && (
+        resource.data.senderId == request.auth.uid ||
+        resource.data.receiverId == request.auth.uid
+      );
+      allow create: if isAuthenticated() && request.resource.data.senderId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // Fellowship Groups: Public read, Admin-only write.
     match /fellowships/{fellowshipId} {
       allow read: if isAuthenticated();
-      allow write: if false; // Use Cloud Functions
+      allow write: if isAdmin();
     }
 
-    // Fellowship Posts
+    // Fellowship Posts: Users can create posts and delete their own.
     match /fellowship_posts/{postId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow update: if false;
       allow delete: if isAuthenticated() && (
-        request.auth.uid == resource.data.userId ||
+        resource.data.userId == request.auth.uid ||
         isAdmin()
       );
     }
 
-    // Fellowship Members
-    match /fellowship_members/{memberId} {
-        allow read: if isAuthenticated();
-        allow write: if false; // Managed by functions
-    }
-
-    // Devotionals
-    match /devotionals/{devotionalId} {
-      allow read: if isAuthenticated();
-      allow write: if false; // Use Cloud Functions
-    }
-
-    // Settings
+    // Settings (e.g., Livestream status): Admins only can change.
     match /settings/{settingId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
 
-    // Private Notes (Room local, but if synced to Firestore)
-    match /private_notes/{noteId} {
-        allow read, write: if isAuthenticated() && request.auth.uid == resource.data.userId;
-    }
-
-    // Direct Messages
-    match /direct_messages/{messageId} {
-      allow read: if isAuthenticated() && (
-        request.auth.uid == resource.data.senderId ||
-        request.auth.uid == resource.data.receiverId
-      );
-      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.senderId;
-      allow update, delete: if false;
+    // Fellowship Members
+    match /fellowship_members/{memberId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdmin(); // Also managed by Cloud Functions
     }
   }
 }

@@ -247,8 +247,8 @@ fun FellowshipDetailScreen(
         onResult = { uri -> selectedMediaUri = uri }
     )
 
-    val isLeader = currentUser.id == fellowship.leaderId
-    val isMember = members.any { it.first.userId == currentUser.id } || isLeader
+    val isLeader = currentUser.id == fellowship.leaderId || currentUser.role == "LEADER"
+    val isMember = members.any { it.first.userId == currentUser.id } || isLeader || currentUser.role == "ADMIN"
     val context = LocalContext.current
 
     Scaffold(

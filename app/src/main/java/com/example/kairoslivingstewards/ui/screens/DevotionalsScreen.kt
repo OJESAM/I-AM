@@ -64,8 +64,14 @@ fun DevotionalsScreen(
     if (showAddDialog) {
         AddDevotionalDialog(
             onDismiss = { showAddDialog = false },
-            onConfirm = { title, content, scripture, category ->
-                viewModel.addDevotional(title, content, scripture, category)
+            onAdd = { newDevotional ->
+                viewModel.addDevotional(
+                    title = newDevotional.title,
+                    content = newDevotional.content,
+                    scripture = newDevotional.scripture,
+                    category = newDevotional.category,
+                    imageUrl = newDevotional.imageUrl
+                )
                 showAddDialog = false
             }
         )
@@ -371,49 +377,3 @@ fun DevotionalCommentItem(comment: CommentEntity) {
     }
 }
 
-@Composable
-fun AddDevotionalDialog(
-    onDismiss: () -> Unit,
-    onConfirm: (String, String, String, String) -> Unit
-) {
-    var title by remember { mutableStateOf("") }
-    var scripture by remember { mutableStateOf("") }
-    var content by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf("Faith") }
-    val categories = listOf("Faith", "Prayer", "Fasting", "Wisdom", "Grace")
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Add Devotional") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Title") })
-                OutlinedTextField(value = scripture, onValueChange = { scripture = it }, label = { Text("Scripture") })
-                OutlinedTextField(
-                    value = content, 
-                    onValueChange = { content = it }, 
-                    label = { Text("Content") },
-                    modifier = Modifier.height(150.dp)
-                )
-                Text("Category", style = MaterialTheme.typography.labelLarge)
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(categories) { cat ->
-                        FilterChip(
-                            selected = category == cat,
-                            onClick = { category = cat },
-                            label = { Text(cat) }
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            Button(onClick = { onConfirm(title, content, scripture, category) }) {
-                Text("Add")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
-        }
-    )
-}

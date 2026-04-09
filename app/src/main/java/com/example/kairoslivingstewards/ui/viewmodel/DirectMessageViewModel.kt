@@ -17,9 +17,18 @@ class DirectMessageViewModel(private val repository: DirectMessageRepository) : 
     private val _allUsers = MutableStateFlow<List<UserEntity>>(emptyList())
     val allUsers: StateFlow<List<UserEntity>> = _allUsers.asStateFlow()
 
+    private val _recentUsers = MutableStateFlow<List<UserEntity>>(emptyList())
+    val recentUsers: StateFlow<List<UserEntity>> = _recentUsers.asStateFlow()
+
     fun loadUsers() {
         viewModelScope.launch {
             _allUsers.value = repository.getAllUsers()
+        }
+    }
+
+    fun loadRecentChats(currentUserId: String) {
+        viewModelScope.launch {
+            _recentUsers.value = repository.getRecentChatUsers(currentUserId)
         }
     }
 

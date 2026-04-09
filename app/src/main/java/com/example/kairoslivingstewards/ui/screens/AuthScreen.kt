@@ -12,19 +12,23 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.kairoslivingstewards.ui.viewmodel.AuthState
 import com.example.kairoslivingstewards.ui.viewmodel.AuthViewModel
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 
 @Composable
 fun AuthScreen(viewModel: AuthViewModel) {
     val authState by viewModel.authState.collectAsState()
     var isLoginMode by remember { mutableStateOf(true) }
+    var showResetDialog by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         when (authState) {
-            is AuthState.Unauthenticated -> {
+            is AuthState.Unauthenticated, is AuthState.Idle -> {
                 if (isLoginMode) {
                     LoginScreen(
                         onLogin = viewModel::login,
-                        onSwitchToRegister = { isLoginMode = false }
+                        onSwitchToRegister = { isLoginMode = false },
+                        onForgotPassword = { showResetDialog = true }
                     )
                 } else {
                     RegistrationScreen(
@@ -43,10 +47,53 @@ fun AuthScreen(viewModel: AuthViewModel) {
             else -> {} // Authenticated state handled in MainActivity
         }
     }
+
+    if (showResetDialog) {
+        ForgotPasswordDialog(
+            onDismiss = { showResetDialog = false },
+            onReset = { email ->
+                viewModel.resetPassword(email)
+                showResetDialog = false
+            }
+        )
+    }
 }
 
 @Composable
-fun LoginScreen(onLogin: (String, String) -> Unit, onSwitchToRegister: () -> Unit) {
+fun ForgotPasswordDialog(onDismiss: () -> Unit, onReset: (String) -> Unit) {
+    var email by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Reset Password") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Enter your email to receive a password reset link.")
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text("Email") },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = { onReset(email) }, enabled = email.isNotBlank()) {
+                Text("Send Link")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
+}
+
+@Composable
+fun LoginScreen(
+    onLogin: (String, String) -> Unit,
+    onSwitchToRegister: () -> Unit,
+    onForgotPassword: () -> Unit
+) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
@@ -78,6 +125,11 @@ fun LoginScreen(onLogin: (String, String) -> Unit, onSwitchToRegister: () -> Uni
         ) {
             Text("Login")
         }
+        
+        TextButton(onClick = onForgotPassword) {
+            Text("Forgot Password?")
+        }
+
         TextButton(onClick = onSwitchToRegister) {
             Text("Don't have an account? Register")
         }

@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() { return request.auth != null; }
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    function isAdmin() { return getUserRole() == "ADMIN"; }
+
+    // User Profiles
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if request.auth.uid == userId;
+    }
+
+    // Fellowships (Write via Functions only, Read if member or Admin)
+    match /fellowships/{fellowshipId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Use Cloud Functions
+    }
+
+    // Fellowship Posts
+    match /fellowship_posts/{postId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if false;
+      allow delete: if isAuthenticated() && (
+        request.auth.uid == resource.data.userId ||
+        isAdmin()
+      );
+    }
+
+    // Fellowship Members
+    match /fellowship_members/{memberId} {
+        allow read: if isAuthenticated();
+        allow write: if false; // Managed by functions
+    }
+
+    // Devotionals
+    match /devotionals/{devotionalId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Use Cloud Functions
+    }
+
+    // Settings
+    match /settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Private Notes (Room local, but if synced to Firestore)
+    match /private_notes/{noteId} {
+        allow read, write: if isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    // Direct Messages
+    match /direct_messages/{messageId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == resource.data.senderId ||
+        request.auth.uid == resource.data.receiverId
+      );
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.senderId;
+      allow update, delete: if false;
+    }
+  }
+}

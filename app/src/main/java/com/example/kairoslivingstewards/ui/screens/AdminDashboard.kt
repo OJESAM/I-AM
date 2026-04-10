@@ -47,7 +47,7 @@ fun AdminDashboard(
         }
     ) { paddingValues ->
         Column(modifier = Modifier.padding(paddingValues)) {
-            ScrollableTabRow(selectedTabIndex = currentTab, edgePadding = 16.dp) {
+            PrimaryScrollableTabRow(selectedTabIndex = currentTab, edgePadding = 16.dp) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
                         selected = currentTab == index,
@@ -59,7 +59,7 @@ fun AdminDashboard(
 
             val selectedTabName = tabs.getOrNull(currentTab)
             when (selectedTabName) {
-                "Content" -> DevotionalManagement(devotionalViewModel)
+                "Content" -> DevotionalManagement(devotionalViewModel, currentUser)
                 "Fellowships" -> FellowshipManagement(fellowshipViewModel)
                 "Livestream" -> LivestreamManagement(livestreamViewModel)
                 "Users" -> UserManagement(fellowshipViewModel)
@@ -135,7 +135,7 @@ fun UserManagement(viewModel: FellowshipViewModel) {
 }
 
 @Composable
-fun DevotionalManagement(viewModel: DevotionalViewModel) {
+fun DevotionalManagement(viewModel: DevotionalViewModel, currentUser: UserEntity) {
     val devotionals by viewModel.devotionals.collectAsStateWithLifecycle()
     var showAddDialog by remember { mutableStateOf(false) }
 
@@ -154,8 +154,10 @@ fun DevotionalManagement(viewModel: DevotionalViewModel) {
                 headlineContent = { Text(devotional.title) },
                 supportingContent = { Text(devotional.category) },
                 trailingContent = {
-                    IconButton(onClick = { viewModel.deleteDevotional(devotional) }) {
-                        Icon(Icons.Rounded.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
+                    if (currentUser.role == "ADMIN" || devotional.ownerId == currentUser.id) {
+                        IconButton(onClick = { viewModel.deleteDevotional(devotional) }) {
+                            Icon(Icons.Rounded.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
+                        }
                     }
                 }
             )
@@ -171,6 +173,7 @@ fun DevotionalManagement(viewModel: DevotionalViewModel) {
                     content = newDevotional.content,
                     scripture = newDevotional.scripture,
                     category = newDevotional.category,
+                    ownerId = currentUser.id,
                     imageUrl = newDevotional.imageUrl
                 )
                 showAddDialog = false

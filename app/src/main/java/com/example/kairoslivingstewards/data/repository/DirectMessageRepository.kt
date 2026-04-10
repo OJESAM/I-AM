@@ -47,26 +47,31 @@ class DirectMessageRepository(private val directMessageDao: DirectMessageDao) {
     }
 
     suspend fun getRecentChatUsers(currentUserId: String): List<UserEntity> {
-        // In a real app, you'd query a "conversations" collection or aggregate messages.
-        // For simplicity with the current structure, we'll fetch unique participant IDs from messages.
-        val sentMessages = db.collection("direct_messages")
-            .whereEqualTo("senderId", currentUserId)
-            .get().await().toObjects(DirectMessageEntity::class.java)
-        
-        val receivedMessages = db.collection("direct_messages")
-            .whereEqualTo("receiverId", currentUserId)
-            .get().await().toObjects(DirectMessageEntity::class.java)
+        return try {
+            val sentMessages = db.collection("direct_messages")
+                .whereEqualTo("senderId", currentUserId)
+                .get().await().toObjects(DirectMessageEntity::class.java)
+            
+            val receivedMessages = db.collection("direct_messages")
+                .whereEqualTo("receiverId", currentUserId)
+                .get().await().toObjects(DirectMessageEntity::class.java)
 
-        val otherUserIds = (sentMessages.map { it.receiverId } + receivedMessages.map { it.senderId })
-            .distinct()
-            .filter { it != currentUserId }
+            val otherUserIds = (sentMessages.map { it.receiverId } + receivedMessages.map { it.senderId })
+                .distinct()
+                .filter { it != currentUserId }
 
-        if (otherUserIds.isEmpty()) return emptyList()
+            if (otherUserIds.isEmpty()) return emptyList()
 
-        // Fetch user details for these IDs
-        // Firestore 'whereIn' is limited to 10-30 items depending on version, but good for start
-        return db.collection("users")
-            .whereIn("id", otherUserIds)
-            .get().await().toObjects(UserEntity::class.java)
+            // Firestore 'whereIn' is limited to 10 items.
+            // For a larger set, you would need to chunk this or use a different strategy.
+            val limitedIds = otherUserIds.take(10)
+
+            db.collection("users")
+                .whereIn("id", limitedIds)
+                .get().await().toObjects(UserEntity::class.java)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyList()
+        }
     }
 }

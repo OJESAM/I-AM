@@ -54,6 +54,7 @@ class DevotionalRepository(
     suspend fun saveDevotional(devotional: DevotionalEntity) {
         val data = hashMapOf(
             "id" to devotional.id,
+            "ownerId" to devotional.ownerId,
             "title" to devotional.title,
             "date" to devotional.date,
             "content" to devotional.content,

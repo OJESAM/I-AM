@@ -204,7 +204,7 @@ fun MainScreen(factory: ViewModelFactory, authViewModel: AuthViewModel, currentU
                 DirectMessageScreen(dmViewModel, currentUser)
             }
             composable(Screen.Livestream.route) { 
-                LivestreamScreen(livestreamViewModel) 
+                LivestreamScreen(livestreamViewModel, currentUser)
             }
             composable(Screen.Settings.route) {
                 SettingsScreen(

@@ -1,5 +1,6 @@
 package com.example.kairoslivingstewards.ui.viewmodel
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.kairoslivingstewards.data.local.entities.UserEntity
@@ -80,6 +81,13 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
     fun updateProfile(username: String, profileImageUrl: String) {
         viewModelScope.launch {
             repository.updateProfile(username, profileImageUrl)
+        }
+    }
+
+    fun uploadProfileImage(uri: Uri, onComplete: (String?) -> Unit) {
+        viewModelScope.launch {
+            val url = repository.uploadProfileImage(uri)
+            onComplete(url)
         }
     }
 }

@@ -43,10 +43,11 @@ class DevotionalViewModel(
         return _devotionals.value.find { it.id == id }
     }
 
-    fun addDevotional(title: String, content: String, scripture: String, category: String, imageUrl: String? = null) {
+    fun addDevotional(title: String, content: String, scripture: String, category: String, ownerId: String, imageUrl: String? = null) {
         viewModelScope.launch {
             val devotional = DevotionalEntity(
                 id = UUID.randomUUID().toString(),
+                ownerId = ownerId,
                 title = title,
                 content = content,
                 scripture = scripture,

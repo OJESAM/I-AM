@@ -45,7 +45,7 @@ fun DevotionalsScreen(
             selectedCategory = selectedCategory,
             onCategorySelect = { viewModel.setCategory(it) },
             onDevotionalClick = { selectedDevotional = it },
-            isAdmin = currentUser.role == "ADMIN",
+            isLoggedIn = true, // Any logged in user can add
             onAddClick = { showAddDialog = true }
         )
     } else {
@@ -57,7 +57,12 @@ fun DevotionalsScreen(
             onBack = { selectedDevotional = null },
             onLike = { /* viewModel.updateLikes(it.id, it.likesCount + 1) */ },
             comments = comments,
-            onAddComment = { text -> viewModel.addComment(selectedDevotional!!.id, currentUser.username, text) }
+            onAddComment = { text -> viewModel.addComment(selectedDevotional!!.id, currentUser.username, text) },
+            canEdit = selectedDevotional!!.ownerId == currentUser.id,
+            onDelete = { 
+                viewModel.deleteDevotional(selectedDevotional!!)
+                selectedDevotional = null
+            }
         )
     }
 
@@ -70,6 +75,7 @@ fun DevotionalsScreen(
                     content = newDevotional.content,
                     scripture = newDevotional.scripture,
                     category = newDevotional.category,
+                    ownerId = currentUser.id,
                     imageUrl = newDevotional.imageUrl
                 )
                 showAddDialog = false
@@ -85,7 +91,7 @@ fun DevotionalList(
     selectedCategory: String,
     onCategorySelect: (String) -> Unit,
     onDevotionalClick: (DevotionalEntity) -> Unit,
-    isAdmin: Boolean,
+    isLoggedIn: Boolean,
     onAddClick: () -> Unit
 ) {
     val categories = listOf("All", "Faith", "Prayer", "Fasting", "Wisdom", "Grace")
@@ -95,7 +101,7 @@ fun DevotionalList(
             LargeTopAppBar(
                 title = { Text("Daily Devotionals", fontWeight = FontWeight.ExtraBold) },
                 actions = {
-                    if (isAdmin) {
+                    if (isLoggedIn) {
                         IconButton(onClick = onAddClick) {
                             Icon(Icons.Rounded.Add, contentDescription = "Add Devotional")
                         }
@@ -202,7 +208,9 @@ fun DevotionalDetail(
     onBack: () -> Unit,
     onLike: (DevotionalEntity) -> Unit,
     comments: List<CommentEntity> = emptyList(),
-    onAddComment: (String) -> Unit = {}
+    onAddComment: (String) -> Unit = {},
+    canEdit: Boolean = false,
+    onDelete: () -> Unit = {}
 ) {
     val context = LocalContext.current
 
@@ -216,6 +224,11 @@ fun DevotionalDetail(
                     }
                 },
                 actions = {
+                    if (canEdit) {
+                        TextButton(onClick = onDelete) {
+                            Text("Delete", color = MaterialTheme.colorScheme.error)
+                        }
+                    }
                     FilledTonalIconButton(
                         onClick = {
                             val shareIntent = Intent().apply {

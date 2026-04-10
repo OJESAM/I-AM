@@ -6,22 +6,22 @@
 
     <!-- I -->
     <path
-        android:fillColor="#FFFFFF"
+        android:fillColor="#FF5722"
         android:pathData="M25,35h8v38h-8z" />
 
     <!-- A -->
     <path
-        android:fillColor="#FFFFFF"
+        android:fillColor="#1868A8"
         android:pathData="M45,73L54,35l9,38h-7l-2-10h-4l-2,10z M52,58h4l-2-8z" />
 
     <!-- M -->
     <path
-        android:fillColor="#FFFFFF"
+        android:fillColor="#FF9800"
         android:pathData="M70,73V35h7l4,10l4,-10h7v38h-6V48l-5,12l-5,-12v25z" />
 
     <!-- A bit of glow/color accent on letters -->
     <path
         android:fillAlpha="0.3"
-        android:fillColor="#FFD700"
+        android:fillColor="#ECEAEF"
         android:pathData="M25,35h2v38h-2z M45,73l1,-4l8,-34l1,4l-8,34z M70,73h2V35h-2z" />
 </vector>

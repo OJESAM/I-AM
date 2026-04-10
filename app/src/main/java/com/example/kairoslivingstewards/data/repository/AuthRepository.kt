@@ -1,15 +1,18 @@
 package com.example.kairoslivingstewards.data.repository
 
+import android.net.Uri
 import com.example.kairoslivingstewards.data.local.dao.UserDao
 import com.example.kairoslivingstewards.data.local.entities.UserEntity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.tasks.await
 
 class AuthRepository(private val userDao: UserDao) {
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
+    private val storage = FirebaseStorage.getInstance()
     val loggedInUser: Flow<UserEntity?> = userDao.getLoggedInUser()
 
     suspend fun register(username: String, email: String, password: String): Boolean {
@@ -107,6 +110,18 @@ class AuthRepository(private val userDao: UserDao) {
         } catch (e: Exception) {
             e.printStackTrace()
             false
+        }
+    }
+
+    suspend fun uploadProfileImage(uri: Uri): String? {
+        return try {
+            val uid = auth.currentUser?.uid ?: return null
+            val ref = storage.reference.child("profile_images/$uid.jpg")
+            ref.putFile(uri).await()
+            ref.downloadUrl.await().toString()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
     }
 }

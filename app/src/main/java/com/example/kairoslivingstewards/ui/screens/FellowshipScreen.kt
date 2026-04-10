@@ -75,6 +75,7 @@ fun FellowshipScreen(
 ) {
     var selectedFellowship by remember { mutableStateOf<FellowshipEntity?>(null) }
     var showJoinDialog by remember { mutableStateOf(false) }
+    var showCreateDialog by remember { mutableStateOf(false) }
 
     if (selectedFellowship == null) {
         MainFellowshipList(
@@ -84,7 +85,8 @@ fun FellowshipScreen(
                 viewModel.loadPosts(it.id)
                 viewModel.loadMembers(it.id)
             },
-            onJoinClick = { showJoinDialog = true }
+            onJoinClick = { showJoinDialog = true },
+            onCreateClick = { showCreateDialog = true }
         )
     } else {
         FellowshipDetailScreen(
@@ -101,6 +103,16 @@ fun FellowshipScreen(
             onJoin = { code ->
                 viewModel.joinFellowship(currentUser.id, code)
                 showJoinDialog = false
+            }
+        )
+    }
+
+    if (showCreateDialog) {
+        AdminAddFellowshipDialog(
+            onDismiss = { showCreateDialog = false },
+            onAdd = { name, description, _ ->
+                viewModel.createFellowship(name, description, currentUser.id)
+                showCreateDialog = false
             }
         )
     }
@@ -146,7 +158,8 @@ fun MemberManagementDialog(
 fun MainFellowshipList(
     viewModel: FellowshipViewModel,
     onFellowshipClick: (FellowshipEntity) -> Unit,
-    onJoinClick: () -> Unit
+    onJoinClick: () -> Unit,
+    onCreateClick: () -> Unit
 ) {
     val fellowships by viewModel.allFellowships.collectAsStateWithLifecycle()
     var searchQuery by remember { mutableStateOf("") }
@@ -164,7 +177,10 @@ fun MainFellowshipList(
                     title = { Text("Fellowships", fontWeight = FontWeight.ExtraBold) },
                     actions = {
                         IconButton(onClick = onJoinClick) {
-                            Icon(Icons.Rounded.Add, contentDescription = "Join Fellowship")
+                            Icon(Icons.Rounded.Groups, contentDescription = "Join Fellowship")
+                        }
+                        IconButton(onClick = onCreateClick) {
+                            Icon(Icons.Rounded.Add, contentDescription = "Create Fellowship")
                         }
                     }
                 )

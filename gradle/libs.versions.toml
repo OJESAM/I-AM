@@ -10,8 +10,9 @@ lifecycleRuntimeCompose = "2.10.0"
 activityCompose = "1.13.0"
 kotlin = "2.3.20"
 composeBom = "2026.03.01"
-googleDevtoolsKsp = "2.3.5"
-googleServices = "4.4.2"
+googleDevtoolsKsp = "2.3.6"
+googleServices = "4.4.4"
+multidex = "2.0.1"
 navigationCompose = "2.9.7"
 roomRuntime = "2.8.4"
 roomKtx = "2.8.4"
@@ -42,12 +43,12 @@ firebaseBom = "34.11.0"
 firebaseAuth = "23.2.1"
 firebaseFirestore = "25.1.4"
 firebaseStorage = "21.0.2"
-firebaseAppCheckPlayIntegrity = "18.0.0"
-firebaseAppCheckDebug = "18.0.0"
-firebaseCrashlytics = "19.4.1"
-firebaseCrashlyticsPlugin = "3.0.3"
-firebaseFunctions = "21.1.0"
-firebaseMessaging = "24.1.0"
+firebaseAppCheckPlayIntegrity = "19.0.2"
+firebaseAppCheckDebug = "19.0.2"
+firebaseCrashlytics = "19.4.4"
+firebaseCrashlyticsPlugin = "3.0.6"
+firebaseFunctions = "21.2.1"
+firebaseMessaging = "24.1.2"
 firebaseAnalytics = "22.5.0"
 coreSplashScreen = "1.2.0"
 
@@ -55,6 +56,7 @@ kotlinxCoroutinesPlayServices = "1.10.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-multidex = { module = "androidx.multidex:multidex", version.ref = "multidex" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }

@@ -8,11 +8,14 @@ plugins {
 
 android {
     namespace = "com.example.kairoslivingstewards"
+    //noinspection GradleDependency
     compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.kairoslivingstewards"
         minSdk = 24
+        multiDexEnabled = true
+        //noinspection OldTargetApi
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -22,8 +25,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
+            isMinifyEnabled = false
+            isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -38,6 +41,7 @@ android {
         compose = true
         buildConfig = true
     }
+
 }
 
 dependencies {
@@ -74,7 +78,6 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.material)
     implementation(libs.youtube.player)
-    implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.core.splashscreen)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)

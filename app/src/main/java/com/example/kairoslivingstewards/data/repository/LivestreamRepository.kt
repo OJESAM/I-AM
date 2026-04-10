@@ -40,6 +40,10 @@ class LivestreamRepository(
         commentDao.insertComment(comment)
     }
 
+    suspend fun deleteComment(comment: CommentEntity) {
+        commentDao.deleteComment(comment)
+    }
+
     fun getNotes(): Flow<List<NoteEntity>> = noteDao.getNotesForTarget("livestream")
 
     suspend fun addNote(content: String) {

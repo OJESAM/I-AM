@@ -33,61 +33,73 @@ class FellowshipRepository(
     }
 
     suspend fun createFellowship(name: String, description: String, leaderId: String) {
-        val fellowshipId = UUID.randomUUID().toString()
-        val inviteCode = (0..5).map { (('A'..'Z') + ('0'..'9')).random() }.joinToString("")
-        
-        val fellowship = FellowshipEntity(
-            id = fellowshipId,
-            name = name,
-            description = description,
-            leaderId = leaderId,
-            inviteCode = inviteCode,
-            timestamp = System.currentTimeMillis()
-        )
+        try {
+            val fellowshipId = UUID.randomUUID().toString()
+            val inviteCode = (0..5).map { (('A'..'Z') + ('0'..'9')).random() }.joinToString("")
+            
+            val fellowship = FellowshipEntity(
+                id = fellowshipId,
+                name = name,
+                description = description,
+                leaderId = leaderId,
+                inviteCode = inviteCode,
+                timestamp = System.currentTimeMillis()
+            )
 
-        db.collection("fellowships").document(fellowshipId).set(fellowship).await()
+            db.collection("fellowships").document(fellowshipId).set(fellowship).await()
 
-        // Automatically add leader to members
-        val member = FellowshipMemberEntity(
-            id = UUID.randomUUID().toString(),
-            fellowshipId = fellowshipId,
-            userId = leaderId,
-            role = "LEADER",
-            joinedAt = System.currentTimeMillis()
-        )
-        db.collection("fellowship_members").document(member.id).set(member).await()
+            // Automatically add leader to members
+            val member = FellowshipMemberEntity(
+                id = UUID.randomUUID().toString(),
+                fellowshipId = fellowshipId,
+                userId = leaderId,
+                role = "LEADER",
+                joinedAt = System.currentTimeMillis()
+            )
+            db.collection("fellowship_members").document(member.id).set(member).await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            com.google.firebase.crashlytics.FirebaseCrashlytics.getInstance().recordException(e)
+            throw e
+        }
     }
 
     suspend fun joinByInviteCode(userId: String, inviteCode: String): Boolean {
-        val snapshot = db.collection("fellowships")
-            .whereEqualTo("inviteCode", inviteCode.uppercase())
-            .limit(1)
-            .get()
-            .await()
+        return try {
+            val snapshot = db.collection("fellowships")
+                .whereEqualTo("inviteCode", inviteCode.uppercase())
+                .limit(1)
+                .get()
+                .await()
 
-        if (snapshot.isEmpty) return false
+            if (snapshot.isEmpty) return false
 
-        val fellowshipId = snapshot.documents[0].id
+            val fellowshipId = snapshot.documents[0].id
 
-        // Check if already a member
-        val memberSnapshot = db.collection("fellowship_members")
-            .whereEqualTo("fellowshipId", fellowshipId)
-            .whereEqualTo("userId", userId)
-            .limit(1)
-            .get()
-            .await()
+            // Check if already a member
+            val memberSnapshot = db.collection("fellowship_members")
+                .whereEqualTo("fellowshipId", fellowshipId)
+                .whereEqualTo("userId", userId)
+                .limit(1)
+                .get()
+                .await()
 
-        if (!memberSnapshot.isEmpty) return true
+            if (!memberSnapshot.isEmpty) return true
 
-        val member = FellowshipMemberEntity(
-            id = UUID.randomUUID().toString(),
-            fellowshipId = fellowshipId,
-            userId = userId,
-            role = "USER",
-            joinedAt = System.currentTimeMillis()
-        )
-        db.collection("fellowship_members").document(member.id).set(member).await()
-        return true
+            val member = FellowshipMemberEntity(
+                id = UUID.randomUUID().toString(),
+                fellowshipId = fellowshipId,
+                userId = userId,
+                role = "USER",
+                joinedAt = System.currentTimeMillis()
+            )
+            db.collection("fellowship_members").document(member.id).set(member).await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            com.google.firebase.crashlytics.FirebaseCrashlytics.getInstance().recordException(e)
+            false
+        }
     }
 
     fun getPosts(fellowshipId: String): Flow<List<FellowshipPostEntity>> = callbackFlow {

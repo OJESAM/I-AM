@@ -50,26 +50,37 @@ class DevotionalRepository(
     }
 
     suspend fun saveDevotional(devotional: DevotionalEntity) {
-        var finalDevotional = devotional
-        
-        // If imageUrl is a local Uri, upload it first
-        if (devotional.imageUrl?.startsWith("content://") == true || devotional.imageUrl?.startsWith("file://") == true) {
-            try {
-                val fileRef = storage.reference.child("devotionals/${UUID.randomUUID()}")
-                fileRef.putFile(Uri.parse(devotional.imageUrl)).await()
-                val downloadUrl = fileRef.downloadUrl.await().toString()
-                finalDevotional = devotional.copy(imageUrl = downloadUrl)
-            } catch (e: Exception) {
-                FirebaseCrashlytics.getInstance().recordException(e)
+        try {
+            var finalDevotional = devotional
+            
+            // If imageUrl is a local Uri, upload it first
+            if (devotional.imageUrl?.startsWith("content://") == true || devotional.imageUrl?.startsWith("file://") == true) {
+                try {
+                    val fileRef = storage.reference.child("devotionals/${UUID.randomUUID()}")
+                    fileRef.putFile(Uri.parse(devotional.imageUrl)).await()
+                    val downloadUrl = fileRef.downloadUrl.await().toString()
+                    finalDevotional = devotional.copy(imageUrl = downloadUrl)
+                } catch (e: Exception) {
+                    FirebaseCrashlytics.getInstance().recordException(e)
+                }
             }
+            
+            db.collection("devotionals").document(finalDevotional.id).set(finalDevotional).await()
+            devotionalDao.insertDevotionals(listOf(finalDevotional))
+        } catch (e: Exception) {
+            e.printStackTrace()
+            FirebaseCrashlytics.getInstance().recordException(e)
+            throw e // Re-throw to handle in ViewModel if needed
         }
-        
-        db.collection("devotionals").document(finalDevotional.id).set(finalDevotional).await()
-        devotionalDao.insertDevotionals(listOf(finalDevotional))
     }
 
     suspend fun deleteDevotional(devotional: DevotionalEntity) {
-        db.collection("devotionals").document(devotional.id).delete().await()
+        try {
+            db.collection("devotionals").document(devotional.id).delete().await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            FirebaseCrashlytics.getInstance().recordException(e)
+        }
     }
 
     fun getComments(devotionalId: String): Flow<List<CommentEntity>> {

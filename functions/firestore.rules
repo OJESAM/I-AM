@@ -2,67 +2,193 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
-    function isAuthenticated() { return request.auth != null; }
+    // =========================
+    // 🔐 AUTH HELPERS
+    // =========================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+
+    function userExists() {
+      return exists(userDoc());
+    }
+
     function getUserRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      return userExists()
+        ? get(userDoc()).data.role
+        : null;
     }
-    function isAdmin() { return getUserRole() == "ADMIN"; }
 
-    // User Profiles
+    function isAdmin() {
+      return isAuthenticated() && getUserRole() == "ADMIN";
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // =========================
+    // 👤 USERS
+    // =========================
     match /users/{userId} {
+
       allow read: if isAuthenticated();
-      allow write: if request.auth.uid == userId;
+
+      allow create: if isAuthenticated()
+        && request.auth.uid == userId;
+
+      allow update: if isOwner(userId)
+        && request.resource.data.role == resource.data.role; // prevent self-promotion
+
+      allow delete: if isOwner(userId) || isAdmin();
     }
 
-    // Fellowships (Write via Functions only, Read if member or Admin)
-    match /fellowships/{fellowshipId} {
-      allow read: if isAuthenticated();
-      allow write: if false; // Use Cloud Functions
-    }
+    // =========================
+    // 📖 DEVOTIONALS
+    // =========================
+    match /devotionals/{id} {
 
-    // Fellowship Posts
-    match /fellowship_posts/{postId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if false;
-      allow delete: if isAuthenticated() && (
-        request.auth.uid == resource.data.userId ||
-        isAdmin()
+
+      allow create: if isAuthenticated()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.keys().hasAll(['title', 'content', 'createdBy']);
+
+      allow update, delete: if isAuthenticated() && (
+        resource.data.createdBy == request.auth.uid || isAdmin()
       );
     }
 
-    // Fellowship Members
-    match /fellowship_members/{memberId} {
-        allow read: if isAuthenticated();
-        allow write: if false; // Managed by functions
-    }
+    // =========================
+    // 🙏 FELLOWSHIPS
+    // =========================
+    match /fellowships/{id} {
 
-    // Devotionals
-    match /devotionals/{devotionalId} {
       allow read: if isAuthenticated();
-      allow write: if false; // Use Cloud Functions
+
+      allow create: if isAuthenticated()
+        && request.resource.data.leaderId == request.auth.uid;
+
+      allow update: if isAuthenticated() && (
+        request.auth.uid == resource.data.leaderId || isAdmin()
+      );
+
+      allow delete: if isAuthenticated() && (
+        request.auth.uid == resource.data.leaderId || isAdmin()
+      );
     }
 
-    // Settings
-    match /settings/{settingId} {
+    // =========================
+    // 👥 FELLOWSHIP MEMBERS
+    // =========================
+    match /fellowship_members/{id} {
+
+      allow read: if isAuthenticated();
+
+      allow create: if isAuthenticated()
+        && request.resource.data.userId == request.auth.uid;
+
+      allow delete: if isAuthenticated() && (
+        request.auth.uid == resource.data.userId || isAdmin()
+      );
+    }
+
+    // =========================
+    // 📝 FELLOWSHIP POSTS
+    // =========================
+    match /fellowship_posts/{id} {
+
+      allow read: if isAuthenticated();
+
+      allow create: if isAuthenticated()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.keys().hasAll(['content', 'userId', 'fellowshipId']);
+
+      allow update, delete: if isAuthenticated() && (
+        request.auth.uid == resource.data.userId || isAdmin()
+      );
+    }
+
+    // =========================
+    // 💬 CHAT SYSTEM (WHATSAPP STYLE)
+    // =========================
+    match /chats/{chatId} {
+
+      allow read, write: if isAuthenticated()
+        && request.auth.uid in resource.data.participants;
+
+      match /messages/{messageId} {
+
+        allow read: if isAuthenticated()
+          && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+
+        allow create: if isAuthenticated()
+          && request.resource.data.senderId == request.auth.uid
+          && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+
+        allow delete: if isAuthenticated() && (
+          request.auth.uid == resource.data.senderId || isAdmin()
+        );
+
+        allow update: if false; // prevent editing messages
+      }
+    }
+
+    // =========================
+    // 📡 LIVESTREAMS
+    // =========================
+    match /livestreams/{id} {
+
+      allow read: if isAuthenticated();
+
+      allow create: if isAuthenticated()
+        && request.resource.data.createdBy == request.auth.uid;
+
+      allow update, delete: if isAuthenticated() && (
+        resource.data.createdBy == request.auth.uid || isAdmin()
+      );
+    }
+
+    // =========================
+    // 🔴 LIVESTREAM CHAT
+    // =========================
+    match /livestreams/{streamId}/messages/{messageId} {
+
+      allow read: if isAuthenticated();
+
+      allow create: if isAuthenticated()
+        && request.resource.data.userId == request.auth.uid;
+
+      allow delete: if isAuthenticated() && (
+        request.auth.uid == resource.data.userId || isAdmin()
+      );
+
+      allow update: if false;
+    }
+
+    // =========================
+    // 🔒 PRIVATE NOTES
+    // =========================
+    match /private_notes/{id} {
+
+      allow create: if isAuthenticated()
+        && request.resource.data.userId == request.auth.uid;
+
+      allow read, update, delete: if isAuthenticated()
+        && request.auth.uid == resource.data.userId;
+    }
+
+    // =========================
+    // ⚙ SETTINGS (ADMIN ONLY)
+    // =========================
+    match /settings/{id} {
+
       allow read: if isAuthenticated();
       allow write: if isAdmin();
-    }
-
-    // Private Notes (Room local, but if synced to Firestore)
-    match /private_notes/{noteId} {
-        allow read, write: if isAuthenticated() && request.auth.uid == resource.data.userId;
-    }
-
-    // Direct Messages
-    match /direct_messages/{messageId} {
-      allow read: if isAuthenticated() && (
-        request.auth.uid == resource.data.senderId ||
-        request.auth.uid == resource.data.receiverId
-      );
-      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.senderId;
-      allow update, delete: if false;
     }
   }
 }

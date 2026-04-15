@@ -10,5 +10,8 @@ data class UserEntity(
     val contact: String = "", // Email or Phone
     val profileImageUrl: String? = null,
     val isVerified: Boolean = false,
-    val role: String = "USER" // USER, ADMIN, LEADER
+    val role: String = "USER", // USER, ADMIN, LEADER
+    val isOnline: Boolean = false,
+    val lastSeen: Long = System.currentTimeMillis(),
+    val typingTo: String? = null
 )

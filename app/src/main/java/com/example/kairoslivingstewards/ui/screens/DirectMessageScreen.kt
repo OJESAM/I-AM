@@ -49,6 +49,19 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.kairoslivingstewards.data.local.entities.UserEntity
 import com.example.kairoslivingstewards.ui.viewmodel.DirectMessageViewModel
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.DoneAll
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
 @Composable
 fun DirectMessageScreen(
     viewModel: DirectMessageViewModel,
@@ -57,6 +70,10 @@ fun DirectMessageScreen(
     var selectedUser by remember { mutableStateOf<UserEntity?>(null) }
     var showAllUsers by remember { mutableStateOf(false) }
 
+    LaunchedEffect(currentUser.id) {
+        viewModel.setOnlineStatus(currentUser.id, true)
+    }
+
     if (selectedUser == null) {
         RecentChatsScreen(
             viewModel = viewModel,
@@ -64,6 +81,7 @@ fun DirectMessageScreen(
             onUserClick = { 
                 selectedUser = it
                 viewModel.loadMessages(currentUser.id, it.id)
+                viewModel.observeRecipientStatus(it.id)
             },
             onStartNewChat = { showAllUsers = true }
         )
@@ -139,8 +157,23 @@ fun ChatListItem(user: UserEntity, onClick: () -> Unit) {
         modifier = Modifier.fillMaxWidth()
     ) {
         ListItem(
-            headlineContent = { Text(user.username, fontWeight = FontWeight.Bold) },
-            supportingContent = { Text("Tap to view messages") },
+            headlineContent = { 
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(user.username, fontWeight = FontWeight.Bold)
+                    if (user.isOnline) {
+                        Spacer(Modifier.width(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .background(Color.Green, CircleShape)
+                        )
+                    }
+                }
+            },
+            supportingContent = { 
+                if (user.isOnline) Text("Online", color = Color.Green) 
+                else Text("Offline", color = Color.Gray)
+            },
             leadingContent = {
                 Surface(
                     color = MaterialTheme.colorScheme.primaryContainer,
@@ -203,12 +236,35 @@ fun ChatDetailScreen(
     onBack: () -> Unit
 ) {
     val messages by viewModel.messages.collectAsStateWithLifecycle()
+    val recipientStatus by viewModel.recipientStatus.collectAsStateWithLifecycle()
     var messageText by remember { mutableStateOf("") }
+
+    LaunchedEffect(messageText) {
+        if (messageText.isNotEmpty()) {
+            viewModel.setTypingStatus(currentUser.id, otherUser.id)
+        } else {
+            viewModel.setTypingStatus(currentUser.id, null)
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(otherUser.username) },
+                title = { 
+                    Column {
+                        Text(otherUser.username)
+                        recipientStatus?.let { status ->
+                            if (status.typingTo == currentUser.id) {
+                                Text("typing...", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                            } else if (status.isOnline) {
+                                Text("Online", style = MaterialTheme.typography.labelSmall, color = Color.Green)
+                            } else {
+                                val lastSeen = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(status.lastSeen))
+                                Text("Last seen at $lastSeen", style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
@@ -244,13 +300,14 @@ fun ChatDetailScreen(
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(paddingValues),
             contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            reverseLayout = false // Consider true for chat, but existing data might need sorting change
         ) {
             items(messages) { message ->
                 val isCurrentUser = message.senderId == currentUser.id
-                Box(
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = if (isCurrentUser) Alignment.CenterEnd else Alignment.CenterStart
+                    horizontalAlignment = if (isCurrentUser) Alignment.End else Alignment.Start
                 ) {
                     Card(
                         colors = CardDefaults.cardColors(
@@ -261,11 +318,34 @@ fun ChatDetailScreen(
                         ),
                         shape = MaterialTheme.shapes.medium
                     ) {
-                        Text(
-                            text = message.content,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                            style = MaterialTheme.typography.bodyLarge
-                        )
+                        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                            Text(
+                                text = message.content,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.End,
+                                modifier = Modifier.align(Alignment.End)
+                            ) {
+                                val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(message.timestamp))
+                                Text(
+                                    text = time,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color.Gray,
+                                    fontSize = 10.sp
+                                )
+                                if (isCurrentUser) {
+                                    Spacer(Modifier.width(4.dp))
+                                    Icon(
+                                        imageVector = if (message.isRead) Icons.Rounded.DoneAll else Icons.Rounded.Check,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(12.dp),
+                                        tint = if (message.isRead) Color.Blue else Color.Gray
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }

@@ -10,5 +10,6 @@ data class DirectMessageEntity(
     val receiverId: String = "",
     val content: String = "",
     val timestamp: Long = System.currentTimeMillis(),
-    val isRead: Boolean = false
+    val isRead: Boolean = false,
+    val isDelivered: Boolean = false
 )

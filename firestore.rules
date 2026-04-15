@@ -29,6 +29,9 @@ service cloud.firestore {
         (request.auth.uid == userId &&
          request.resource.data.role == resource.data.role &&
          request.resource.data.isVerified == resource.data.isVerified) ||
+        // Allow updating online status and typing status
+        (request.auth.uid == userId &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isOnline', 'lastSeen', 'typingTo', 'fcmToken'])) ||
         isAdmin()
       );
       allow delete: if isAdmin();
@@ -47,7 +50,14 @@ service cloud.firestore {
         resource.data.receiverId == request.auth.uid
       );
       allow create: if isAuthenticated() && request.resource.data.senderId == request.auth.uid;
-      allow update, delete: if false;
+      // Allow recipient to mark as read, and sender to mark as delivered.
+      allow update: if isAuthenticated() && (
+        (request.auth.uid == resource.data.receiverId &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead'])) ||
+        (request.auth.uid == resource.data.senderId &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isDelivered']))
+      );
+      allow delete: if false;
     }
 
     // Fellowship Groups: Public read, Admin-only write.

@@ -10,6 +10,15 @@ android {
     namespace = "com.example.kairoslivingstewards"
     //noinspection GradleDependency
     compileSdk = 36
+    signingConfigs {
+        create("release") {
+            // Replace with your actual keystore details
+            storeFile = file("my-release-key.jks")
+            storePassword = "kobf1234"
+            keyAlias = "i am"
+            keyPassword = "kobf1234"
+        }
+    }
 
     defaultConfig {
         applicationId = "com.example.kairoslivingstewards"
@@ -25,8 +34,9 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
-            isShrinkResources = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

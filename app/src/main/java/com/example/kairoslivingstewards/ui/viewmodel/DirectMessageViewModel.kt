@@ -20,6 +20,29 @@ class DirectMessageViewModel(private val repository: DirectMessageRepository) : 
     private val _recentUsers = MutableStateFlow<List<UserEntity>>(emptyList())
     val recentUsers: StateFlow<List<UserEntity>> = _recentUsers.asStateFlow()
 
+    private val _recipientStatus = MutableStateFlow<UserEntity?>(null)
+    val recipientStatus: StateFlow<UserEntity?> = _recipientStatus.asStateFlow()
+
+    fun setOnlineStatus(userId: String, isOnline: Boolean) {
+        viewModelScope.launch {
+            repository.setUserOnlineStatus(userId, isOnline)
+        }
+    }
+
+    fun setTypingStatus(userId: String, typingTo: String?) {
+        viewModelScope.launch {
+            repository.setUserTypingStatus(userId, typingTo)
+        }
+    }
+
+    fun observeRecipientStatus(recipientId: String) {
+        viewModelScope.launch {
+            repository.getUserStatus(recipientId).collect {
+                _recipientStatus.value = it
+            }
+        }
+    }
+
     fun loadUsers() {
         viewModelScope.launch {
             _allUsers.value = repository.getAllUsers()

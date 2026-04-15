@@ -25,6 +25,12 @@ class DirectMessageRepository(private val directMessageDao: DirectMessageDao) {
                             (it.senderId == otherUserId && it.receiverId == userId) 
                         }
                         .sortedBy { it.timestamp }
+                    
+                    // Mark messages as read when they are received by the other user
+                    messages.filter { it.receiverId == userId && !it.isRead }.forEach { msg ->
+                        markMessageAsRead(msg.id)
+                    }
+                    
                     trySend(messages)
                 }
             }
@@ -37,9 +43,38 @@ class DirectMessageRepository(private val directMessageDao: DirectMessageDao) {
             senderId = senderId,
             receiverId = receiverId,
             content = content,
-            timestamp = System.currentTimeMillis()
+            timestamp = System.currentTimeMillis(),
+            isDelivered = false,
+            isRead = false
         )
         db.collection("direct_messages").document(message.id).set(message).await()
+        // Mark as delivered immediately after successful Firestore write (simplified)
+        db.collection("direct_messages").document(message.id).update("isDelivered", true).await()
+    }
+
+    private fun markMessageAsRead(messageId: String) {
+        db.collection("direct_messages").document(messageId).update("isRead", true)
+    }
+
+    fun getUserStatus(userId: String): Flow<UserEntity?> = callbackFlow {
+        val subscription = db.collection("users").document(userId)
+            .addSnapshotListener { snapshot, _ ->
+                if (snapshot != null) {
+                    trySend(snapshot.toObject(UserEntity::class.java))
+                }
+            }
+        awaitClose { subscription.remove() }
+    }
+
+    suspend fun setUserOnlineStatus(userId: String, isOnline: Boolean) {
+        db.collection("users").document(userId).update(
+            "isOnline", isOnline,
+            "lastSeen", System.currentTimeMillis()
+        ).await()
+    }
+
+    suspend fun setUserTypingStatus(userId: String, typingTo: String?) {
+        db.collection("users").document(userId).update("typingTo", typingTo).await()
     }
 
     suspend fun getAllUsers(): List<UserEntity> {

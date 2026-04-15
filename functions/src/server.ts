@@ -95,6 +95,38 @@ app.post('/saveDevotional', authenticate, async (req: any, res: any) => {
     res.send({ success: true });
 });
 
+app.post('/deleteDevotional', authenticate, async (req: any, res: any) => {
+    if (!(await isAdmin(req.user.uid))) {
+        return res.status(403).send('Unauthorized');
+    }
+
+    const { id } = req.body;
+    await admin.firestore().collection("devotionals").doc(id).delete();
+
+    res.send({ success: true });
+});
+
+app.post('/updateUserRole', authenticate, async (req: any, res: any) => {
+    if (!(await isAdmin(req.user.uid))) {
+        return res.status(403).send('Only admins can update user roles.');
+    }
+
+    const { userId, role } = req.body;
+    await admin.firestore().collection("users").doc(userId).update({ role });
+
+    res.send({ success: true });
+});
+
+app.post('/updateLivestreamSettings', authenticate, async (req: any, res: any) => {
+    if (!(await isAdmin(req.user.uid))) {
+        return res.status(403).send('Unauthorized');
+    }
+
+    await admin.firestore().collection("settings").doc("livestream").set(req.body, { merge: true });
+
+    res.send({ success: true });
+});
+
 // Real-time Push Notification Listener
 // Note: In Express, we start this listener when the server starts.
 admin.firestore().collection("direct_messages").onSnapshot(snapshot => {

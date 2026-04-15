@@ -5,6 +5,9 @@ import com.example.kairoslivingstewards.data.local.dao.CommentDao
 import com.example.kairoslivingstewards.data.local.dao.DevotionalDao
 import com.example.kairoslivingstewards.data.local.entities.CommentEntity
 import com.example.kairoslivingstewards.data.local.entities.DevotionalEntity
+import com.example.kairoslivingstewards.data.remote.DeleteRequest
+import com.example.kairoslivingstewards.data.remote.RetrofitClient
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -20,6 +23,7 @@ class DevotionalRepository(
 ) {
     private val db = FirebaseFirestore.getInstance()
     private val storage = FirebaseStorage.getInstance()
+    private val auth = FirebaseAuth.getInstance()
 
     fun getDevotionals(category: String? = null): Flow<List<DevotionalEntity>> {
         return (if (category == null || category == "All") {
@@ -65,7 +69,13 @@ class DevotionalRepository(
                 }
             }
             
-            db.collection("devotionals").document(finalDevotional.id).set(finalDevotional).await()
+            val token = auth.currentUser?.getIdToken(true)?.await()?.token ?: throw Exception("Not authenticated")
+            val response = RetrofitClient.instance.saveDevotional("Bearer $token", finalDevotional)
+            
+            if (!response.success) {
+                throw Exception(response.message ?: "Failed to save devotional via backend")
+            }
+
             devotionalDao.insertDevotionals(listOf(finalDevotional))
         } catch (e: Exception) {
             e.printStackTrace()
@@ -76,7 +86,13 @@ class DevotionalRepository(
 
     suspend fun deleteDevotional(devotional: DevotionalEntity) {
         try {
-            db.collection("devotionals").document(devotional.id).delete().await()
+            val token = auth.currentUser?.getIdToken(true)?.await()?.token ?: throw Exception("Not authenticated")
+            val response = RetrofitClient.instance.deleteDevotional("Bearer $token", DeleteRequest(devotional.id))
+            
+            if (!response.success) {
+                throw Exception(response.message ?: "Failed to delete devotional via backend")
+            }
+            devotionalDao.deleteDevotional(devotional)
         } catch (e: Exception) {
             e.printStackTrace()
             FirebaseCrashlytics.getInstance().recordException(e)

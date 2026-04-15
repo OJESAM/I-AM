@@ -8,6 +8,7 @@ import com.example.kairoslivingstewards.data.local.entities.UserEntity
 import com.example.kairoslivingstewards.data.model.FellowshipCell
 import com.example.kairoslivingstewards.data.remote.CreateFellowshipRequest
 import com.example.kairoslivingstewards.data.remote.RetrofitClient
+import com.example.kairoslivingstewards.data.remote.UpdateRoleRequest
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
@@ -196,7 +197,18 @@ class FellowshipRepository(
     }
 
     suspend fun updateUserRole(userId: String, role: String) {
-        db.collection("users").document(userId).update("role", role).await()
+        try {
+            val token = auth.currentUser?.getIdToken(true)?.await()?.token ?: throw Exception("Not authenticated")
+            val response = RetrofitClient.instance.updateUserRole("Bearer $token", UpdateRoleRequest(userId, role))
+            
+            if (!response.success) {
+                throw Exception(response.message ?: "Failed to update user role via backend")
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            com.google.firebase.crashlytics.FirebaseCrashlytics.getInstance().recordException(e)
+            throw e
+        }
     }
 
     fun saveLeader(cell: FellowshipCell) {}

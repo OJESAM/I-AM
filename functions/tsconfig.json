@@ -6,9 +6,10 @@
     "preserveConstEnums": true,
     "sourceMap": true,
     "outDir": "lib",
-    "target": "es2020",
-    "lib": ["es2020"],
+    "target": "es2022",
+    "lib": ["es2022", "esnext.disposable"],
     "esModuleInterop": true,
+    "skipLibCheck": true,
     "resolveJsonModule": true
   },
   "include": ["src/**/*"]

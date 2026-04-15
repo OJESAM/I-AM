@@ -13,5 +13,6 @@ data class UserEntity(
     val role: String = "USER", // USER, ADMIN, LEADER
     val isOnline: Boolean = false,
     val lastSeen: Long = System.currentTimeMillis(),
-    val typingTo: String? = null
+    val typingTo: String? = null,
+    val fcmToken: String? = null
 )

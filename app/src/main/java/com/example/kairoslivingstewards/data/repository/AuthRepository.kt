@@ -113,6 +113,21 @@ class AuthRepository(private val userDao: UserDao) {
         }
     }
 
+    suspend fun updateFcmToken(token: String): Boolean {
+        return try {
+            val uid = auth.currentUser?.uid ?: return false
+            db.collection("users").document(uid).update("fcmToken", token).await()
+            val user = userDao.getUserById(uid)
+            if (user != null) {
+                userDao.insertUser(user.copy(fcmToken = token))
+            }
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
     suspend fun uploadProfileImage(uri: Uri): String? {
         return try {
             val uid = auth.currentUser?.uid ?: return null

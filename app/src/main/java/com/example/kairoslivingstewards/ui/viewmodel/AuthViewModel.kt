@@ -90,4 +90,10 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
             onComplete(url)
         }
     }
+
+    fun updateFcmToken(token: String) {
+        viewModelScope.launch {
+            repository.updateFcmToken(token)
+        }
+    }
 }

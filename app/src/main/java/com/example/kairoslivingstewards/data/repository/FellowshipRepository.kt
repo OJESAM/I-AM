@@ -6,8 +6,10 @@ import com.example.kairoslivingstewards.data.local.entities.FellowshipMemberEnti
 import com.example.kairoslivingstewards.data.local.entities.FellowshipPostEntity
 import com.example.kairoslivingstewards.data.local.entities.UserEntity
 import com.example.kairoslivingstewards.data.model.FellowshipCell
+import com.example.kairoslivingstewards.data.remote.CreateFellowshipRequest
+import com.example.kairoslivingstewards.data.remote.RetrofitClient
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.functions.FirebaseFunctions
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -20,7 +22,7 @@ class FellowshipRepository(
 ) {
     private val db = FirebaseFirestore.getInstance()
     private val storage = FirebaseStorage.getInstance()
-    private val functions = FirebaseFunctions.getInstance()
+    private val auth = FirebaseAuth.getInstance()
 
     fun getAllFellowships(): Flow<List<FellowshipEntity>> = callbackFlow {
         val subscription = db.collection("fellowships").addSnapshotListener { snapshot, _ ->
@@ -34,29 +36,14 @@ class FellowshipRepository(
 
     suspend fun createFellowship(name: String, description: String, leaderId: String) {
         try {
-            val fellowshipId = UUID.randomUUID().toString()
-            val inviteCode = (0..5).map { (('A'..'Z') + ('0'..'9')).random() }.joinToString("")
+            val token = auth.currentUser?.getIdToken(true)?.await()?.token ?: throw Exception("Not authenticated")
+            val request = CreateFellowshipRequest(name, description, leaderId)
             
-            val fellowship = FellowshipEntity(
-                id = fellowshipId,
-                name = name,
-                description = description,
-                leaderId = leaderId,
-                inviteCode = inviteCode,
-                timestamp = System.currentTimeMillis()
-            )
-
-            db.collection("fellowships").document(fellowshipId).set(fellowship).await()
-
-            // Automatically add leader to members
-            val member = FellowshipMemberEntity(
-                id = UUID.randomUUID().toString(),
-                fellowshipId = fellowshipId,
-                userId = leaderId,
-                role = "LEADER",
-                joinedAt = System.currentTimeMillis()
-            )
-            db.collection("fellowship_members").document(member.id).set(member).await()
+            val response = RetrofitClient.instance.createFellowship("Bearer $token", request)
+            
+            if (!response.success) {
+                throw Exception(response.message ?: "Failed to create fellowship via backend")
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             com.google.firebase.crashlytics.FirebaseCrashlytics.getInstance().recordException(e)

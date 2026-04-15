@@ -33,30 +33,61 @@ class FellowshipRepository(
     }
 
     suspend fun createFellowship(name: String, description: String, leaderId: String) {
-        val data = hashMapOf(
-            "name" to name,
-            "description" to description,
-            "leaderId" to leaderId
+        val fellowshipId = UUID.randomUUID().toString()
+        val inviteCode = (0..5).map { (('A'..'Z') + ('0'..'9')).random() }.joinToString("")
+        
+        val fellowship = FellowshipEntity(
+            id = fellowshipId,
+            name = name,
+            description = description,
+            leaderId = leaderId,
+            inviteCode = inviteCode,
+            timestamp = System.currentTimeMillis()
         )
-        functions
-            .getHttpsCallable("createFellowship")
-            .call(data)
-            .await()
+
+        db.collection("fellowships").document(fellowshipId).set(fellowship).await()
+
+        // Automatically add leader to members
+        val member = FellowshipMemberEntity(
+            id = UUID.randomUUID().toString(),
+            fellowshipId = fellowshipId,
+            userId = leaderId,
+            role = "LEADER",
+            joinedAt = System.currentTimeMillis()
+        )
+        db.collection("fellowship_members").document(member.id).set(member).await()
     }
 
     suspend fun joinByInviteCode(userId: String, inviteCode: String): Boolean {
-        val data = hashMapOf(
-            "userId" to userId,
-            "inviteCode" to inviteCode
-        )
-        val result = functions
-            .getHttpsCallable("joinFellowship")
-            .call(data)
+        val snapshot = db.collection("fellowships")
+            .whereEqualTo("inviteCode", inviteCode.uppercase())
+            .limit(1)
+            .get()
             .await()
-        
-        // The Cloud Function should return { success: true/false } or similar
-        val resultData = result.data as? Map<*, *>
-        return resultData?.get("success") as? Boolean ?: false
+
+        if (snapshot.isEmpty) return false
+
+        val fellowshipId = snapshot.documents[0].id
+
+        // Check if already a member
+        val memberSnapshot = db.collection("fellowship_members")
+            .whereEqualTo("fellowshipId", fellowshipId)
+            .whereEqualTo("userId", userId)
+            .limit(1)
+            .get()
+            .await()
+
+        if (!memberSnapshot.isEmpty) return true
+
+        val member = FellowshipMemberEntity(
+            id = UUID.randomUUID().toString(),
+            fellowshipId = fellowshipId,
+            userId = userId,
+            role = "USER",
+            joinedAt = System.currentTimeMillis()
+        )
+        db.collection("fellowship_members").document(member.id).set(member).await()
+        return true
     }
 
     fun getPosts(fellowshipId: String): Flow<List<FellowshipPostEntity>> = callbackFlow {
@@ -105,14 +136,15 @@ class FellowshipRepository(
     }
 
     suspend fun removeMember(fellowshipId: String, userId: String) {
-        val data = hashMapOf(
-            "fellowshipId" to fellowshipId,
-            "userId" to userId
-        )
-        functions
-            .getHttpsCallable("removeMember")
-            .call(data)
+        val snapshot = db.collection("fellowship_members")
+            .whereEqualTo("fellowshipId", fellowshipId)
+            .whereEqualTo("userId", userId)
+            .get()
             .await()
+
+        for (doc in snapshot.documents) {
+            doc.reference.delete().await()
+        }
     }
 
     suspend fun createPost(
@@ -126,10 +158,14 @@ class FellowshipRepository(
         var mediaType: String? = null
 
         if (mediaUri != null) {
-            val fileRef = storage.reference.child("posts/${UUID.randomUUID()}")
-            fileRef.putFile(android.net.Uri.parse(mediaUri)).await()
-            mediaUrl = fileRef.downloadUrl.await().toString()
-            mediaType = if (mediaUri.contains("video")) "video" else "image"
+            try {
+                val fileRef = storage.reference.child("posts/${UUID.randomUUID()}")
+                fileRef.putFile(android.net.Uri.parse(mediaUri)).await()
+                mediaUrl = fileRef.downloadUrl.await().toString()
+                mediaType = if (mediaUri.contains("video")) "video" else "image"
+            } catch (e: Exception) {
+                com.google.firebase.crashlytics.FirebaseCrashlytics.getInstance().recordException(e)
+            }
         }
 
         val post = FellowshipPostEntity(
@@ -143,6 +179,7 @@ class FellowshipRepository(
             timestamp = System.currentTimeMillis()
         )
         db.collection("fellowship_posts").document(post.id).set(post).await()
+        fellowshipDao.insertPost(post)
     }
 
     suspend fun deletePost(post: FellowshipPostEntity) {

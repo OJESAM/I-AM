@@ -1,5 +1,5 @@
 [versions]
-agp = "9.1.0"
+agp = "9.1.1"
 coreKtx = "1.18.0"
 junit = "4.13.2"
 junitVersion = "1.3.0"
@@ -47,9 +47,9 @@ firebaseAppCheckPlayIntegrity = "19.0.2"
 firebaseAppCheckDebug = "19.0.2"
 firebaseCrashlytics = "19.4.4"
 firebaseCrashlyticsPlugin = "3.0.6"
-firebaseFunctions = "21.2.1"
 firebaseMessaging = "24.1.2"
 firebaseAnalytics = "22.5.0"
+firebaseFunctions = "21.1.0"
 coreSplashScreen = "1.2.0"
 
 kotlinxCoroutinesPlayServices = "1.10.2"
@@ -108,9 +108,9 @@ firebase-storage = { group = "com.google.firebase", name = "firebase-storage-ktx
 firebase-appcheck-playintegrity = { group = "com.google.firebase", name = "firebase-appcheck-playintegrity", version.ref = "firebaseAppCheckPlayIntegrity" }
 firebase-appcheck-debug = { group = "com.google.firebase", name = "firebase-appcheck-debug", version.ref = "firebaseAppCheckDebug" }
 firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics-ktx", version.ref = "firebaseCrashlytics" }
-firebase-functions = { group = "com.google.firebase", name = "firebase-functions-ktx", version.ref = "firebaseFunctions" }
 firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging-ktx", version.ref = "firebaseMessaging" }
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics-ktx", version.ref = "firebaseAnalytics" }
+firebase-functions = { group = "com.google.firebase", name = "firebase-functions-ktx", version.ref = "firebaseFunctions" }
 androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "coreSplashScreen" }
 
 [plugins]

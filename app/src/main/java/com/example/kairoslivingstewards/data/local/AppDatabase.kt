@@ -18,7 +18,7 @@ import com.example.kairoslivingstewards.data.local.entities.*
         NoteEntity::class,
         DirectMessageEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

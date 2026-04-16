@@ -1,0 +1,214 @@
+:root {
+  color-scheme: light;
+  font-family: Inter, system-ui, sans-serif;
+  background: #f7f8fb;
+  color: #111827;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body, html, #root {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  margin: 0;
+}
+
+.page-shell {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.brand {
+  font-size: 1.8rem;
+  font-weight: 800;
+}
+
+.subtitle {
+  color: #555;
+  margin-top: 4px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+button {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #111827;
+  padding: 10px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease;
+}
+
+button.active,
+button:hover {
+  background: #4338ca;
+  color: #fff;
+  border-color: #4338ca;
+}
+
+button.signout {
+  background: #ef4444;
+  color: white;
+  border-color: #ef4444;
+}
+
+.content {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.08);
+}
+
+.form-card,
+.card,
+.split-card {
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid #e5e7eb;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.card-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid #d1d5db;
+  padding: 12px 14px;
+  font: inherit;
+  resize: vertical;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: #4338ca;
+  box-shadow: 0 0 0 4px rgba(67, 56, 202, 0.08);
+}
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+ul li {
+  margin-bottom: 12px;
+}
+
+.secondary-text {
+  color: #6b7280;
+}
+
+.field-row {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.notification {
+  margin-top: 8px;
+  font-size: 0.95rem;
+  color: #065f46;
+}
+
+.error-text {
+  color: #b91c1c;
+}
+
+.devotional-list {
+  display: grid;
+  gap: 18px;
+}
+
+.devotional-card,
+.fellowship-card,
+.post-card,
+.member-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 18px;
+}
+
+.devotional-card h3,
+.fellowship-card h3,
+.post-card h3 {
+  margin: 0 0 8px 0;
+}
+
+.small-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 0.85rem;
+}
+
+.details-grid {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 840px) {
+  .details-grid {
+    grid-template-columns: 1fr 360px;
+  }
+}
+
+.link-button {
+  background: transparent;
+  border-color: transparent;
+  color: #4338ca;
+  padding: 0;
+}
+
+.link-button:hover {
+  background: rgba(67, 56, 202, 0.08);
+}

@@ -14,3 +14,7 @@
 .cxx
 local.properties
 *.hprof
+node_modules
+web/node_modules
+web/dist
+functions/node_modules

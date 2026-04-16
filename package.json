@@ -1,0 +1,10 @@
+{
+  "scripts": {
+    "build:web": "cd web && npm ci && npm run build",
+    "build": "npm run build:web",
+    "deploy": "npm run build:web && firebase deploy --only hosting"
+  },
+  "dependencies": {
+    "firebase": "^12.12.0"
+  }
+}

@@ -2,57 +2,105 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
-    function isAuthenticated() { return request.auth != null; }
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
     function getUserRole() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
     }
-    function isAdmin() { return getUserRole() == "ADMIN"; }
 
-    // User Profiles
+    function isAdmin() {
+      return isAuthenticated() && getUserRole() == "ADMIN";
+    }
+
+    function canManageFellowship(fellowshipId) {
+      return isAdmin() || get(/databases/$(database)/documents/fellowships/$(fellowshipId)).data.leaderId == request.auth.uid;
+    }
+
+    function validateUser() {
+      return request.resource.data.id == request.auth.uid
+        && request.resource.data.username is string
+        && request.resource.data.contact is string
+        && request.resource.data.isVerified is bool
+        && request.resource.data.role == "USER";
+    }
+
     match /users/{userId} {
       allow read: if isAuthenticated();
-      allow write: if request.auth.uid == userId;
+      allow create: if isAuthenticated() && request.auth.uid == userId && validateUser();
+      allow update: if isAuthenticated() && request.auth.uid == userId
+        && request.resource.data.id == resource.data.id
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.isVerified == resource.data.isVerified;
     }
 
-    // Fellowships (Write via Functions only, Read if member or Admin)
-    match /fellowships/{fellowshipId} {
-      allow read: if isAuthenticated();
-      allow write: if false; // Use Cloud Functions
+    function validateDevotional() {
+      return request.resource.data.id is string
+        && request.resource.data.title is string
+        && request.resource.data.title.size() <= 200
+        && request.resource.data.content is string
+        && request.resource.data.content.size() <= 12000
+        && request.resource.data.scripture is string
+        && request.resource.data.scripture.size() <= 200
+        && request.resource.data.category is string
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.timestamp is number
+        && request.resource.data.date is string
+        && request.resource.data.likesCount is int
+        && request.resource.data.commentsEnabled is bool;
     }
 
-    // Fellowship Posts
-    match /fellowship_posts/{postId} {
+    match /devotionals/{devotionalId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if false;
+      allow create: if isAuthenticated() && validateDevotional();
+      allow update, delete: if isAuthenticated() && resource.data.createdBy == request.auth.uid;
+    }
+
+    match /fellowships/{id} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.leaderId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && canManageFellowship(id);
+    }
+
+    match /fellowship_members/{id} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && (
+        request.resource.data.userId == request.auth.uid ||
+        canManageFellowship(request.resource.data.fellowshipId)
+      );
       allow delete: if isAuthenticated() && (
-        request.auth.uid == resource.data.userId ||
+        resource.data.userId == request.auth.uid ||
+        canManageFellowship(resource.data.fellowshipId)
+      );
+    }
+
+    match /fellowship_posts/{id} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        canManageFellowship(resource.data.fellowshipId)
+      );
+    }
+
+    // Livestreams
+    match /livestreams/{streamId} {
+      allow read: if isAuthenticated();
+
+      allow create: if isAuthenticated()
+        && request.resource.data.createdBy == request.auth.uid;
+
+      allow update, delete: if isAuthenticated() && (
+        resource.data.createdBy == request.auth.uid ||
         isAdmin()
       );
     }
 
-    // Fellowship Members
-    match /fellowship_members/{memberId} {
-        allow read: if isAuthenticated();
-        allow write: if false; // Managed by functions
-    }
-
-    // Devotionals
-    match /devotionals/{devotionalId} {
-      allow read: if isAuthenticated();
-      allow write: if false; // Use Cloud Functions
-    }
-
-    // Settings
-    match /settings/{settingId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-
-    // Private Notes (Room local, but if synced to Firestore)
+    // Private Notes
     match /private_notes/{noteId} {
-        allow read, write: if isAuthenticated() && request.auth.uid == resource.data.userId;
+      allow read, write: if isAuthenticated()
+        && request.auth.uid == resource.data.userId;
     }
 
     // Direct Messages
@@ -61,8 +109,17 @@ service cloud.firestore {
         request.auth.uid == resource.data.senderId ||
         request.auth.uid == resource.data.receiverId
       );
-      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.senderId;
+
+      allow create: if isAuthenticated()
+        && request.auth.uid == request.resource.data.senderId;
+
       allow update, delete: if false;
+    }
+
+    // Settings (ADMIN ONLY)
+    match /settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
     }
   }
 }

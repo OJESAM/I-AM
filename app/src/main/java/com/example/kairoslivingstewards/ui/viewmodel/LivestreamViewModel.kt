@@ -40,10 +40,11 @@ class LivestreamViewModel(
         }
     }
 
-    fun addComment(userName: String, text: String) {
+    fun addComment(userId: String, userName: String, text: String) {
         viewModelScope.launch {
             val comment = CommentEntity(
                 targetId = "livestream",
+                userId = userId,
                 userName = userName,
                 text = text
             )
@@ -71,6 +72,12 @@ class LivestreamViewModel(
     fun deleteNote(note: NoteEntity) {
         viewModelScope.launch {
             repository.deleteNote(note)
+        }
+    }
+
+    fun deleteComment(comment: CommentEntity) {
+        viewModelScope.launch {
+            repository.deleteComment(comment)
         }
     }
 }

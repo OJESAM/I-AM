@@ -1,0 +1,194 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =========================
+    // 🔐 AUTH HELPERS
+    // =========================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+
+    function userExists() {
+      return exists(userDoc());
+    }
+
+    function getUserRole() {
+      return userExists()
+        ? get(userDoc()).data.role
+        : null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && getUserRole() == "ADMIN";
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // =========================
+    // 👤 USERS
+    // =========================
+    match /users/{userId} {
+
+      allow read: if isAuthenticated();
+
+      allow create: if isAuthenticated()
+        && request.auth.uid == userId;
+
+      allow update: if isOwner(userId)
+        && request.resource.data.role == resource.data.role; // prevent self-promotion
+
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
+    // =========================
+    // 📖 DEVOTIONALS
+    // =========================
+    match /devotionals/{id} {
+
+      allow read: if isAuthenticated();
+
+      allow create: if isAuthenticated()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.keys().hasAll(['title', 'content', 'createdBy']);
+
+      allow update, delete: if isAuthenticated() && (
+        resource.data.createdBy == request.auth.uid || isAdmin()
+      );
+    }
+
+    // =========================
+    // 🙏 FELLOWSHIPS
+    // =========================
+    match /fellowships/{id} {
+
+      allow read: if isAuthenticated();
+
+      allow create: if isAuthenticated()
+        && request.resource.data.leaderId == request.auth.uid;
+
+      allow update: if isAuthenticated() && (
+        request.auth.uid == resource.data.leaderId || isAdmin()
+      );
+
+      allow delete: if isAuthenticated() && (
+        request.auth.uid == resource.data.leaderId || isAdmin()
+      );
+    }
+
+    // =========================
+    // 👥 FELLOWSHIP MEMBERS
+    // =========================
+    match /fellowship_members/{id} {
+
+      allow read: if isAuthenticated();
+
+      allow create: if isAuthenticated()
+        && request.resource.data.userId == request.auth.uid;
+
+      allow delete: if isAuthenticated() && (
+        request.auth.uid == resource.data.userId || isAdmin()
+      );
+    }
+
+    // =========================
+    // 📝 FELLOWSHIP POSTS
+    // =========================
+    match /fellowship_posts/{id} {
+
+      allow read: if isAuthenticated();
+
+      allow create: if isAuthenticated()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.keys().hasAll(['content', 'userId', 'fellowshipId']);
+
+      allow update, delete: if isAuthenticated() && (
+        request.auth.uid == resource.data.userId || isAdmin()
+      );
+    }
+
+    // =========================
+    // 💬 CHAT SYSTEM (WHATSAPP STYLE)
+    // =========================
+    match /chats/{chatId} {
+
+      allow read, write: if isAuthenticated()
+        && request.auth.uid in resource.data.participants;
+
+      match /messages/{messageId} {
+
+        allow read: if isAuthenticated()
+          && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+
+        allow create: if isAuthenticated()
+          && request.resource.data.senderId == request.auth.uid
+          && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+
+        allow delete: if isAuthenticated() && (
+          request.auth.uid == resource.data.senderId || isAdmin()
+        );
+
+        allow update: if false; // prevent editing messages
+      }
+    }
+
+    // =========================
+    // 📡 LIVESTREAMS
+    // =========================
+    match /livestreams/{id} {
+
+      allow read: if isAuthenticated();
+
+      allow create: if isAuthenticated()
+        && request.resource.data.createdBy == request.auth.uid;
+
+      allow update, delete: if isAuthenticated() && (
+        resource.data.createdBy == request.auth.uid || isAdmin()
+      );
+    }
+
+    // =========================
+    // 🔴 LIVESTREAM CHAT
+    // =========================
+    match /livestreams/{streamId}/messages/{messageId} {
+
+      allow read: if isAuthenticated();
+
+      allow create: if isAuthenticated()
+        && request.resource.data.userId == request.auth.uid;
+
+      allow delete: if isAuthenticated() && (
+        request.auth.uid == resource.data.userId || isAdmin()
+      );
+
+      allow update: if false;
+    }
+
+    // =========================
+    // 🔒 PRIVATE NOTES
+    // =========================
+    match /private_notes/{id} {
+
+      allow create: if isAuthenticated()
+        && request.resource.data.userId == request.auth.uid;
+
+      allow read, update, delete: if isAuthenticated()
+        && request.auth.uid == resource.data.userId;
+    }
+
+    // =========================
+    // ⚙ SETTINGS (ADMIN ONLY)
+    // =========================
+    match /settings/{id} {
+
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+  }
+}

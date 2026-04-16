@@ -1,13 +1,25 @@
 package com.example.kairoslivingstewards.ui.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AddPhotoAlternate
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.example.kairoslivingstewards.data.local.entities.DevotionalEntity
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.UUID
 
 @Composable
@@ -19,7 +31,13 @@ fun AddDevotionalDialog(
     var content by remember { mutableStateOf("") }
     var scripture by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("General") }
-    var imageUrl by remember { mutableStateOf("") }
+    var imageUri by remember { mutableStateOf<Uri?>(null) }
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        imageUri = uri
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -40,12 +58,37 @@ fun AddDevotionalDialog(
                     modifier = Modifier.height(150.dp)
                 )
                 OutlinedTextField(value = category, onValueChange = { category = it }, label = { Text("Category") })
-                OutlinedTextField(value = imageUrl, onValueChange = { imageUrl = it }, label = { Text("Image URL (Optional)") })
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Card(
+                    onClick = { imagePickerLauncher.launch("image/*") },
+                    modifier = Modifier.fillMaxWidth().height(150.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    if (imageUri != null) {
+                        AsyncImage(
+                            model = imageUri,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(Icons.Rounded.AddPhotoAlternate, contentDescription = null)
+                                Text("Select Image")
+                            }
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
             TextButton(
                 onClick = {
+                    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                    val currentDate = sdf.format(Date())
                     onAdd(
                         DevotionalEntity(
                             id = UUID.randomUUID().toString(),
@@ -53,8 +96,8 @@ fun AddDevotionalDialog(
                             content = content,
                             scripture = scripture,
                             category = category,
-                            imageUrl = if (imageUrl.isBlank()) null else imageUrl,
-                            date = "Today",
+                            imageUrl = imageUri?.toString(),
+                            date = currentDate,
                             timestamp = System.currentTimeMillis()
                         )
                     )

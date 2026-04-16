@@ -6,6 +6,8 @@ import com.example.kairoslivingstewards.data.local.dao.NoteDao
 import com.example.kairoslivingstewards.data.local.entities.CommentEntity
 import com.example.kairoslivingstewards.data.local.entities.LivestreamSettingsEntity
 import com.example.kairoslivingstewards.data.local.entities.NoteEntity
+import com.example.kairoslivingstewards.data.remote.RetrofitClient
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -18,6 +20,7 @@ class LivestreamRepository(
     private val noteDao: NoteDao
 ) {
     private val db = FirebaseFirestore.getInstance()
+    private val auth = FirebaseAuth.getInstance()
 
     fun getSettings(): Flow<LivestreamSettingsEntity?> = callbackFlow {
         val subscription = db.collection("settings").document("livestream")
@@ -31,13 +34,29 @@ class LivestreamRepository(
     }
 
     suspend fun updateSettings(settings: LivestreamSettingsEntity) {
-        db.collection("settings").document("livestream").set(settings).await()
+        try {
+            val token = auth.currentUser?.getIdToken(true)?.await()?.token ?: throw Exception("Not authenticated")
+            val response = RetrofitClient.instance.updateLivestreamSettings("Bearer $token", settings)
+            
+            if (!response.success) {
+                throw Exception(response.message ?: "Failed to update livestream settings via backend")
+            }
+            settingsDao.insertSettings(settings)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            com.google.firebase.crashlytics.FirebaseCrashlytics.getInstance().recordException(e)
+            throw e
+        }
     }
 
     fun getComments(): Flow<List<CommentEntity>> = commentDao.getCommentsForTarget("livestream")
 
     suspend fun addComment(comment: CommentEntity) {
         commentDao.insertComment(comment)
+    }
+
+    suspend fun deleteComment(comment: CommentEntity) {
+        commentDao.deleteComment(comment)
     }
 
     fun getNotes(): Flow<List<NoteEntity>> = noteDao.getNotesForTarget("livestream")

@@ -3,16 +3,25 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Centered Cross -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M51,30h6v12h12v6h-12v18h-6v-18h-12v-6h12z" />
 
-    <!-- Symbolic Growth / Steward Leaves at base -->
+    <!-- I -->
     <path
-        android:fillColor="#A5D6A7"
-        android:pathData="M54,68c0,0 12,2 12,12c0,4 -8,8 -12,8s-12,-4 -12,-8c0,-10 12,-12 12,-12z" />
+        android:fillColor="#FF5722"
+        android:pathData="M25,35h8v38h-8z" />
+
+    <!-- A -->
     <path
-        android:fillColor="#81C784"
-        android:pathData="M54,68c0,0 -12,2 -12,12c0,4 8,8 12,8s12,-4 12,-8c0,-10 -12,-12 -12,-12z" />
+        android:fillColor="#1868A8"
+        android:pathData="M45,73L54,35l9,38h-7l-2-10h-4l-2,10z M52,58h4l-2-8z" />
+
+    <!-- M -->
+    <path
+        android:fillColor="#FF9800"
+        android:pathData="M70,73V35h7l4,10l4,-10h7v38h-6V48l-5,12l-5,-12v25z" />
+
+    <!-- A bit of glow/color accent on letters -->
+    <path
+        android:fillAlpha="0.3"
+        android:fillColor="#ECEAEF"
+        android:pathData="M25,35h2v38h-2z M45,73l1,-4l8,-34l1,4l-8,34z M70,73h2V35h-2z" />
 </vector>

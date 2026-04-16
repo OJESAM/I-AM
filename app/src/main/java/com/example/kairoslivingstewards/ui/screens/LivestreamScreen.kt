@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.kairoslivingstewards.data.local.entities.CommentEntity
+import com.example.kairoslivingstewards.data.local.entities.UserEntity
 import com.example.kairoslivingstewards.ui.viewmodel.LivestreamViewModel
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener
@@ -29,7 +30,7 @@ import android.content.Intent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LivestreamScreen(viewModel: LivestreamViewModel) {
+fun LivestreamScreen(viewModel: LivestreamViewModel, currentUser: UserEntity) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val comments by viewModel.comments.collectAsStateWithLifecycle()
     val notes by viewModel.notes.collectAsStateWithLifecycle()
@@ -134,7 +135,7 @@ fun LivestreamScreen(viewModel: LivestreamViewModel) {
                     if (selectedTab == 0) {
                         if (commentsEnabled) {
                             LivestreamCommentInput { text ->
-                                viewModel.addComment("User", text)
+                                viewModel.addComment(currentUser.id, currentUser.username, text)
                             }
                         } else {
                             Text(
@@ -154,7 +155,11 @@ fun LivestreamScreen(viewModel: LivestreamViewModel) {
             if (selectedTab == 0) {
                 if (commentsEnabled) {
                     items(comments) { comment ->
-                        LivestreamCommentItem(comment)
+                        LivestreamCommentItem(
+                            comment = comment,
+                            canDelete = currentUser.role == "ADMIN" || comment.userId == currentUser.id,
+                            onDelete = { viewModel.deleteComment(comment) }
+                        )
                     }
                 }
             } else {
@@ -252,9 +257,17 @@ fun LivestreamCommentInput(onSend: (String) -> Unit) {
 }
 
 @Composable
-fun LivestreamCommentItem(comment: CommentEntity) {
+fun LivestreamCommentItem(comment: CommentEntity, canDelete: Boolean = false, onDelete: () -> Unit = {}) {
     Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
-        Text(text = comment.userName, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(text = comment.userName, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.weight(1f))
+            if (canDelete) {
+                IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
+                    Icon(Icons.Rounded.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
+                }
+            }
+        }
         Text(text = comment.text, style = MaterialTheme.typography.bodyMedium)
         HorizontalDivider(modifier = Modifier.padding(top = 8.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
     }

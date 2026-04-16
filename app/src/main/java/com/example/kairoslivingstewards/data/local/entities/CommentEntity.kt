@@ -7,6 +7,7 @@ import androidx.room.PrimaryKey
 data class CommentEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val targetId: String, // ID of the devotional or "livestream"
+    val userId: String = "",
     val userName: String,
     val text: String,
     val timestamp: Long = System.currentTimeMillis()

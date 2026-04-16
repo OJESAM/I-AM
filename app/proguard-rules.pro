@@ -1,21 +1,25 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# Firebase
+-keepattributes Signature
+-keepattributes *Annotation*
+-dontwarn com.google.firebase.**
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Room
+-keep class * extends androidx.room.RoomDatabase
+-dontwarn androidx.room.paging.**
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Retrofit
+-keepattributes Signature, InnerClasses, EnclosingMethod
+-keep @retrofit2.http.* class * { *; }
+-dontwarn retrofit2.**
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Moshi
+-keep class com.squareup.moshi.** { *; }
+-keep interface com.squareup.moshi.** { *; }
+-keep @com.squareup.moshi.Json class *
+-keep class * {
+    @com.squareup.moshi.Json *;
+}
+
+# Keep Entity classes
+-keep class com.example.kairoslivingstewards.data.local.entities.** { *; }
+-keepclassmembers class com.example.kairoslivingstewards.data.local.entities.** { *; }

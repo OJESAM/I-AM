@@ -8,11 +8,23 @@ plugins {
 
 android {
     namespace = "com.example.kairoslivingstewards"
+    //noinspection GradleDependency
     compileSdk = 36
+    signingConfigs {
+        create("release") {
+            // Replace with your actual keystore details
+            storeFile = file("my-release-key.jks")
+            storePassword = "kobf1234"
+            keyAlias = "i am"
+            keyPassword = "kobf1234"
+        }
+    }
 
     defaultConfig {
         applicationId = "com.example.kairoslivingstewards"
         minSdk = 24
+        multiDexEnabled = true
+        //noinspection OldTargetApi
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -22,7 +34,9 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -30,13 +44,14 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
     buildFeatures {
         compose = true
         buildConfig = true
     }
+
 }
 
 dependencies {
@@ -73,7 +88,7 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.material)
     implementation(libs.youtube.player)
-    implementation(libs.androidx.ui.graphics)
+    implementation(libs.androidx.core.splashscreen)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
@@ -81,8 +96,9 @@ dependencies {
     implementation(libs.firebase.appcheck.playintegrity)
     implementation(libs.firebase.appcheck.debug)
     implementation(libs.firebase.crashlytics)
-    implementation(libs.firebase.functions)
     implementation(libs.firebase.messaging)
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.functions)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.androidx.core)

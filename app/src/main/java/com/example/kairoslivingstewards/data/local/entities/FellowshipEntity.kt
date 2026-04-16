@@ -12,15 +12,17 @@ data class FellowshipEntity(
     val latitude: Double = 0.0,
     val longitude: Double = 0.0,
     val inviteCode: String = "",
-    val leaderId: String = ""
+    val leaderId: String = "",
+    val timestamp: Long = System.currentTimeMillis()
 )
 
 @Entity(tableName = "fellowship_members")
 data class FellowshipMemberEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @PrimaryKey val id: String = "",
     val fellowshipId: String = "",
     val userId: String = "",
-    val role: String = "" // MEMBER, LEADER
+    val role: String = "", // MEMBER, LEADER
+    val joinedAt: Long = System.currentTimeMillis()
 )
 
 @Entity(tableName = "fellowship_posts")

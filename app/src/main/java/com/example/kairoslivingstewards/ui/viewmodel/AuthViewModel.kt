@@ -1,5 +1,6 @@
 package com.example.kairoslivingstewards.ui.viewmodel
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.kairoslivingstewards.data.local.entities.UserEntity
@@ -62,6 +63,37 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
         viewModelScope.launch {
             repository.logout()
             _authState.value = AuthState.Unauthenticated
+        }
+    }
+
+    fun resetPassword(email: String) {
+        viewModelScope.launch {
+            _authState.value = AuthState.Loading
+            val success = repository.resetPassword(email)
+            if (success) {
+                _authState.value = AuthState.Idle // Or a specific success state
+            } else {
+                _authState.value = AuthState.Error("Password reset failed")
+            }
+        }
+    }
+
+    fun updateProfile(username: String, profileImageUrl: String) {
+        viewModelScope.launch {
+            repository.updateProfile(username, profileImageUrl)
+        }
+    }
+
+    fun uploadProfileImage(uri: Uri, onComplete: (String?) -> Unit) {
+        viewModelScope.launch {
+            val url = repository.uploadProfileImage(uri)
+            onComplete(url)
+        }
+    }
+
+    fun updateFcmToken(token: String) {
+        viewModelScope.launch {
+            repository.updateFcmToken(token)
         }
     }
 }

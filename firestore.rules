@@ -2,6 +2,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+<<<<<<< HEAD
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -93,10 +94,84 @@ service cloud.firestore {
 
       allow update, delete: if isAuthenticated() && (
         resource.data.createdBy == request.auth.uid ||
+=======
+    // --- Helper Functions ---
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      // Note: This helper counts as a read operation
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && getUserData().role == "ADMIN";
+    }
+
+    // --- Collections ---
+
+    // User Profiles: Users can read all profiles, but only write their own.
+    // Protection: Users cannot change their own 'role' or 'isVerified' status.
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.auth.uid == userId
+                    && request.resource.data.role == "USER"
+                    && request.resource.data.isVerified == false;
+      allow update: if isAuthenticated() && (
+        (request.auth.uid == userId &&
+         request.resource.data.role == resource.data.role &&
+         request.resource.data.isVerified == resource.data.isVerified) ||
+        // Allow updating online status and typing status
+        (request.auth.uid == userId &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isOnline', 'lastSeen', 'typingTo', 'fcmToken'])) ||
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Devotionals: Read access for all users. Writes are restricted to Admins.
+    match /devotionals/{devotionalId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Direct Messages: Private. Only sender or receiver can read.
+    match /direct_messages/{messageId} {
+      allow read: if isAuthenticated() && (
+        resource.data.senderId == request.auth.uid ||
+        resource.data.receiverId == request.auth.uid
+      );
+      allow create: if isAuthenticated() && request.resource.data.senderId == request.auth.uid;
+      // Allow recipient to mark as read, and sender to mark as delivered.
+      allow update: if isAuthenticated() && (
+        (request.auth.uid == resource.data.receiverId &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead'])) ||
+        (request.auth.uid == resource.data.senderId &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isDelivered']))
+      );
+      allow delete: if false;
+    }
+
+    // Fellowship Groups: Public read, Admin-only write.
+    match /fellowships/{fellowshipId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Fellowship Posts: Users can create posts and delete their own.
+    match /fellowship_posts/{postId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if false;
+      allow delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+>>>>>>> 9c81d9b88953c6cc1a7c47889a863a932438996c
         isAdmin()
       );
     }
 
+<<<<<<< HEAD
     // Private Notes
     match /private_notes/{noteId} {
       allow read, write: if isAuthenticated()
@@ -114,6 +189,24 @@ service cloud.firestore {
         && request.auth.uid == request.resource.data.senderId;
 
       allow update, delete: if false;
+=======
+    // Settings (e.g., Livestream status): Admins only can change.
+    match /settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Fellowship Members
+    match /fellowship_members/{memberId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() && (
+          request.resource.data.userId == request.auth.uid || isAdmin()
+        );
+        allow delete: if isAuthenticated() && (
+          resource.data.userId == request.auth.uid || isAdmin()
+        );
+        allow update: if isAdmin();
+>>>>>>> 9c81d9b88953c6cc1a7c47889a863a932438996c
     }
 
     // Settings (ADMIN ONLY)

@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+<<<<<<< HEAD
     "target": "es2020",
     "module": "commonjs",
     "lib": ["es2020"],
@@ -11,4 +12,19 @@
     "forceConsistentCasingInFileNames": true
   },
   "include": ["src"]
+=======
+    "module": "commonjs",
+    "noImplicitAny": true,
+    "removeComments": true,
+    "preserveConstEnums": true,
+    "sourceMap": true,
+    "outDir": "lib",
+    "target": "es2022",
+    "lib": ["es2022", "esnext.disposable"],
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true
+  },
+  "include": ["src/**/*"]
+>>>>>>> 9c81d9b88953c6cc1a7c47889a863a932438996c
 }

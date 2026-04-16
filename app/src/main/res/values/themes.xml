@@ -1,4 +1,12 @@
 <resources>
+    <!-- Base application theme. -->
+    <style name="Theme.IAM" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/purple_500</item>
+    </style>
 
-    <style name="Theme.IAM" parent="Theme.MaterialComponents.Light" />
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#03A9F4</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_background</item>
+        <item name="postSplashScreenTheme">@style/Theme.IAM</item>
+    </style>
 </resources>

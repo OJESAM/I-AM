@@ -1,16 +1,18 @@
 package com.example.kairoslivingstewards.data.repository
 
+import android.net.Uri
 import com.example.kairoslivingstewards.data.local.dao.UserDao
 import com.example.kairoslivingstewards.data.local.entities.UserEntity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.tasks.await
 
 class AuthRepository(private val userDao: UserDao) {
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
+    private val storage = FirebaseStorage.getInstance()
     val loggedInUser: Flow<UserEntity?> = userDao.getLoggedInUser()
 
     suspend fun register(username: String, email: String, password: String): Boolean {
@@ -18,11 +20,14 @@ class AuthRepository(private val userDao: UserDao) {
             val result = auth.createUserWithEmailAndPassword(email, password).await()
             val firebaseUser = result.user
             if (firebaseUser != null) {
+                // Send verification email
+                firebaseUser.sendEmailVerification().await()
+                
                 val user = UserEntity(
                     id = firebaseUser.uid,
                     username = username,
                     contact = email,
-                    isVerified = true // Firebase handles verification if needed via email
+                    isVerified = false // Match firestore rules (requires false on create)
                 )
                 db.collection("users").document(user.id).set(user).await()
                 userDao.insertUser(user)
@@ -42,14 +47,25 @@ class AuthRepository(private val userDao: UserDao) {
             val firebaseUser = result.user
             if (firebaseUser != null) {
                 val doc = db.collection("users").document(firebaseUser.uid).get().await()
+                val isEmailVerified = firebaseUser.isEmailVerified
+                
                 val user = if (doc.exists()) {
-                    doc.toObject(UserEntity::class.java)!!
+                    val firestoreUser = doc.toObject(UserEntity::class.java)!!
+                    // Update verification status if it changed
+                    if (firestoreUser.isVerified != isEmailVerified) {
+                        val updatedUser = firestoreUser.copy(isVerified = isEmailVerified)
+                        db.collection("users").document(firebaseUser.uid)
+                            .update("isVerified", isEmailVerified).await()
+                        updatedUser
+                    } else {
+                        firestoreUser
+                    }
                 } else {
                     UserEntity(
                         id = firebaseUser.uid,
                         username = firebaseUser.displayName ?: email.substringBefore("@"),
                         contact = email,
-                        isVerified = true
+                        isVerified = isEmailVerified
                     )
                 }
                 userDao.insertUser(user)
@@ -66,5 +82,61 @@ class AuthRepository(private val userDao: UserDao) {
     suspend fun logout() {
         auth.signOut()
         userDao.clearUser()
+    }
+
+    suspend fun resetPassword(email: String): Boolean {
+        return try {
+            auth.sendPasswordResetEmail(email).await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    suspend fun updateProfile(username: String, profileImageUrl: String): Boolean {
+        return try {
+            val uid = auth.currentUser?.uid ?: return false
+            val updates = mapOf(
+                "username" to username,
+                "profileImageUrl" to profileImageUrl
+            )
+            db.collection("users").document(uid).update(updates).await()
+            val user = userDao.getUserById(uid)
+            if (user != null) {
+                userDao.insertUser(user.copy(username = username, profileImageUrl = profileImageUrl))
+            }
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    suspend fun updateFcmToken(token: String): Boolean {
+        return try {
+            val uid = auth.currentUser?.uid ?: return false
+            db.collection("users").document(uid).update("fcmToken", token).await()
+            val user = userDao.getUserById(uid)
+            if (user != null) {
+                userDao.insertUser(user.copy(fcmToken = token))
+            }
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    suspend fun uploadProfileImage(uri: Uri): String? {
+        return try {
+            val uid = auth.currentUser?.uid ?: return null
+            val ref = storage.reference.child("profile_images/$uid.jpg")
+            ref.putFile(uri).await()
+            ref.downloadUrl.await().toString()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
     }
 }

@@ -318,3 +318,46 @@ export const deleteDevotional = functions.https.onCall(async (data, context) => 
     await admin.firestore().collection("devotionals").doc(data.id).delete();
     return { success: true };
 });
+
+/**
+ * Sends a push notification when a new direct message is created.
+ */
+export const onNewDirectMessage = functions.firestore
+    .document("direct_messages/{messageId}")
+    .onCreate(async (snapshot, context) => {
+        const message = snapshot.data();
+        if (!message) return;
+
+        const senderId = message.senderId;
+        const receiverId = message.receiverId;
+        const content = message.content;
+
+        // Get sender's name
+        const senderDoc = await admin.firestore().collection("users").doc(senderId).get();
+        const senderName = senderDoc.data()?.username || "Someone";
+
+        // Get receiver's FCM token
+        const receiverDoc = await admin.firestore().collection("users").doc(receiverId).get();
+        const fcmToken = receiverDoc.data()?.fcmToken;
+
+        if (fcmToken) {
+            const payload = {
+                notification: {
+                    title: `New message from ${senderName}`,
+                    body: content,
+                    clickAction: "FLUTTER_NOTIFICATION_CLICK", // Or your Android intent filter
+                },
+                data: {
+                    type: "direct_message",
+                    senderId: senderId,
+                }
+            };
+
+            try {
+                await admin.messaging().sendToDevice(fcmToken, payload);
+                console.log(`Notification sent to ${receiverId}`);
+            } catch (error) {
+                console.error("Error sending notification:", error);
+            }
+        }
+    });

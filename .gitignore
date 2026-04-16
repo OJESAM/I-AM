@@ -14,7 +14,15 @@
 .cxx
 local.properties
 *.hprof
+<<<<<<< HEAD
 node_modules
 web/node_modules
 web/dist
 functions/node_modules
+=======
+app/google-services.json
+app/release/
+functions/lib/
+node_modules/
+.env
+>>>>>>> 9c81d9b88953c6cc1a7c47889a863a932438996c

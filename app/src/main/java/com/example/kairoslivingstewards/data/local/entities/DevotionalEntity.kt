@@ -6,6 +6,7 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "devotionals")
 data class DevotionalEntity(
     @PrimaryKey val id: String = "",
+    val ownerId: String = "",
     val title: String = "",
     val date: String = "",
     val content: String = "",

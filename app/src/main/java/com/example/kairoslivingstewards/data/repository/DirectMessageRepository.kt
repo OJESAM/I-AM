@@ -60,7 +60,24 @@ class DirectMessageRepository(private val directMessageDao: DirectMessageDao) {
         val subscription = db.collection("users").document(userId)
             .addSnapshotListener { snapshot, _ ->
                 if (snapshot != null) {
-                    trySend(snapshot.toObject(UserEntity::class.java))
+                    val user = try {
+                        snapshot.toObject(UserEntity::class.java)
+                    } catch (e: Exception) {
+                        val data = snapshot.data ?: emptyMap()
+                        UserEntity(
+                            id = snapshot.id,
+                            username = data["username"] as? String ?: "",
+                            contact = data["contact"] as? String ?: "",
+                            profileImageUrl = data["profileImageUrl"] as? String,
+                            isVerified = data["isVerified"] as? Boolean ?: false,
+                            role = data["role"] as? String ?: "USER",
+                            isOnline = data["isOnline"] as? Boolean ?: false,
+                            lastSeen = (data["lastSeen"] as? Long) ?: System.currentTimeMillis(),
+                            typingTo = data["typingTo"] as? String,
+                            fcmToken = data["fcmToken"] as? String
+                        )
+                    }
+                    trySend(user)
                 }
             }
         awaitClose { subscription.remove() }

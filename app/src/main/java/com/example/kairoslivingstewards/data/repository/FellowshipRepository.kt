@@ -15,6 +15,7 @@ import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.tasks.await
 import java.util.UUID
 
@@ -25,14 +26,21 @@ class FellowshipRepository(
     private val storage = FirebaseStorage.getInstance()
     private val auth = FirebaseAuth.getInstance()
 
-    fun getAllFellowships(): Flow<List<FellowshipEntity>> = callbackFlow {
-        val subscription = db.collection("fellowships").addSnapshotListener { snapshot, _ ->
-            if (snapshot != null) {
-                val fellowships = snapshot.toObjects(FellowshipEntity::class.java)
-                trySend(fellowships)
-            }
+    fun getAllFellowships(): Flow<List<FellowshipEntity>> {
+        return fellowshipDao.getAllFellowships().onStart {
+            syncFellowships()
         }
-        awaitClose { subscription.remove() }
+    }
+
+    private suspend fun syncFellowships() {
+        try {
+            val snapshot = db.collection("fellowships").get().await()
+            val fellowships = snapshot.toObjects(FellowshipEntity::class.java)
+            fellowshipDao.insertFellowships(fellowships)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            com.google.firebase.crashlytics.FirebaseCrashlytics.getInstance().recordException(e)
+        }
     }
 
     suspend fun createFellowship(name: String, description: String, leaderId: String) {

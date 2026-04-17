@@ -107,4 +107,17 @@ class DevotionalRepository(
         commentDao.insertComment(comment)
         // Also sync comment to Firestore in a real app
     }
+
+    suspend fun updateLikes(devotionalId: String, newCount: Int) {
+        try {
+            db.collection("devotionals").document(devotionalId)
+                .update("likesCount", newCount).await()
+            val devotional = devotionalDao.getDevotionalById(devotionalId)
+            if (devotional != null) {
+                devotionalDao.insertDevotionals(listOf(devotional.copy(likesCount = newCount)))
+            }
+        } catch (e: Exception) {
+            FirebaseCrashlytics.getInstance().recordException(e)
+        }
+    }
 }

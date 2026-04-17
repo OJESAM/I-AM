@@ -50,7 +50,24 @@ class AuthRepository(private val userDao: UserDao) {
                 val isEmailVerified = firebaseUser.isEmailVerified
                 
                 val user = if (doc.exists()) {
-                    val firestoreUser = doc.toObject(UserEntity::class.java)!!
+                    val firestoreUser = try {
+                        doc.toObject(UserEntity::class.java)!!
+                    } catch (e: Exception) {
+                        // Fallback if toObject fails due to mapping issues
+                        val data = doc.data ?: emptyMap()
+                        UserEntity(
+                            id = doc.id,
+                            username = data["username"] as? String ?: "",
+                            contact = data["contact"] as? String ?: "",
+                            profileImageUrl = data["profileImageUrl"] as? String,
+                            isVerified = data["isVerified"] as? Boolean ?: false,
+                            role = data["role"] as? String ?: "USER",
+                            isOnline = data["isOnline"] as? Boolean ?: false,
+                            lastSeen = (data["lastSeen"] as? Long) ?: System.currentTimeMillis(),
+                            typingTo = data["typingTo"] as? String,
+                            fcmToken = data["fcmToken"] as? String
+                        )
+                    }
                     // Update verification status if it changed
                     if (firestoreUser.isVerified != isEmailVerified) {
                         val updatedUser = firestoreUser.copy(isVerified = isEmailVerified)
@@ -105,6 +122,23 @@ class AuthRepository(private val userDao: UserDao) {
             val user = userDao.getUserById(uid)
             if (user != null) {
                 userDao.insertUser(user.copy(username = username, profileImageUrl = profileImageUrl))
+            } else {
+                // If user not in local DB, fetch and save
+                val doc = db.collection("users").document(uid).get().await()
+                val data = doc.data ?: emptyMap()
+                val fetchedUser = UserEntity(
+                    id = doc.id,
+                    username = data["username"] as? String ?: "",
+                    contact = data["contact"] as? String ?: "",
+                    profileImageUrl = data["profileImageUrl"] as? String,
+                    isVerified = data["isVerified"] as? Boolean ?: false,
+                    role = data["role"] as? String ?: "USER",
+                    isOnline = data["isOnline"] as? Boolean ?: false,
+                    lastSeen = (data["lastSeen"] as? Long) ?: System.currentTimeMillis(),
+                    typingTo = data["typingTo"] as? String,
+                    fcmToken = data["fcmToken"] as? String
+                )
+                userDao.insertUser(fetchedUser)
             }
             true
         } catch (e: Exception) {

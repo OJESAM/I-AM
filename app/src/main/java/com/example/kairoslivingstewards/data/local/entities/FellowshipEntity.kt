@@ -2,6 +2,7 @@ package com.example.kairoslivingstewards.data.local.entities
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.google.firebase.firestore.DocumentId
 
 @Entity(tableName = "fellowships")
 data class FellowshipEntity(

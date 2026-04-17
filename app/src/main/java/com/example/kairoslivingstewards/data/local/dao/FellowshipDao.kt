@@ -14,6 +14,9 @@ interface FellowshipDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertFellowship(fellowship: FellowshipEntity)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertFellowships(fellowships: List<FellowshipEntity>)
+
     @Query("SELECT * FROM fellowships WHERE id = :fellowshipId")
     fun getFellowshipById(fellowshipId: String): Flow<FellowshipEntity?>
 
@@ -28,6 +31,9 @@ interface FellowshipDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPost(post: FellowshipPostEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPosts(posts: List<FellowshipPostEntity>)
 
     @Query("SELECT * FROM fellowship_posts WHERE fellowshipId = :fellowshipId ORDER BY timestamp DESC")
     fun getPostsByFellowship(fellowshipId: String): Flow<List<FellowshipPostEntity>>

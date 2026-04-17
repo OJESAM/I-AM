@@ -2,6 +2,7 @@ package com.example.kairoslivingstewards.data.local.entities
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.google.firebase.firestore.PropertyName
 
 @Entity(tableName = "users")
 data class UserEntity(
@@ -9,9 +10,11 @@ data class UserEntity(
     val username: String = "",
     val contact: String = "", // Email or Phone
     val profileImageUrl: String? = null,
-    val isVerified: Boolean = false,
+    @get:PropertyName("isVerified") @set:PropertyName("isVerified")
+    var isVerified: Boolean = false,
     val role: String = "USER", // USER, ADMIN, LEADER
-    val isOnline: Boolean = false,
+    @get:PropertyName("isOnline") @set:PropertyName("isOnline")
+    var isOnline: Boolean = false,
     val lastSeen: Long = System.currentTimeMillis(),
     val typingTo: String? = null,
     val fcmToken: String? = null

@@ -2,10 +2,11 @@ package com.example.kairoslivingstewards.data.local.entities
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.google.firebase.firestore.DocumentId
 
 @Entity(tableName = "devotionals")
 data class DevotionalEntity(
-    @PrimaryKey val id: String = "",
+    @DocumentId @PrimaryKey val id: String = "",
     val ownerId: String = "",
     val title: String = "",
     val date: String = "",

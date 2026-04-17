@@ -38,6 +38,13 @@ class FellowshipViewModel(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+
+    fun clearError() {
+        _error.value = null
+    }
+
     val allFellowships: StateFlow<List<FellowshipEntity>> = repository.getAllFellowships()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -73,37 +80,79 @@ class FellowshipViewModel(
 
     fun removeMember(fellowshipId: String, userId: String) {
         viewModelScope.launch {
-            repository.removeMember(fellowshipId, userId)
+            try {
+                repository.removeMember(fellowshipId, userId)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _error.value = "Failed to remove member: ${e.message}"
+            }
         }
     }
 
     fun createFellowship(name: String, description: String, userId: String) {
         viewModelScope.launch {
-            repository.createFellowship(name, description, userId)
+            _isLoading.value = true
+            try {
+                repository.createFellowship(name, description, userId)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _error.value = "Failed to create fellowship: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
         }
     }
 
     fun joinFellowship(userId: String, inviteCode: String) {
         viewModelScope.launch {
-            repository.joinByInviteCode(userId, inviteCode)
+            _isLoading.value = true
+            try {
+                val success = repository.joinByInviteCode(userId, inviteCode)
+                if (!success) {
+                    _error.value = "Invalid invite code"
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _error.value = "Failed to join fellowship: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
         }
     }
 
     fun postToFellowship(fellowshipId: String, userId: String, userName: String, content: String, mediaUrl: String? = null) {
         viewModelScope.launch {
-            repository.createPost(fellowshipId, userId, userName, content, mediaUrl)
+            _isLoading.value = true
+            try {
+                repository.createPost(fellowshipId, userId, userName, content, mediaUrl)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _error.value = "Failed to create post: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
         }
     }
 
     fun deletePost(post: FellowshipPostEntity) {
         viewModelScope.launch {
-            repository.deletePost(post)
+            try {
+                repository.deletePost(post)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _error.value = "Failed to delete post: ${e.message}"
+            }
         }
     }
 
     fun updateUserRole(userId: String, role: String) {
         viewModelScope.launch {
-            repository.updateUserRole(userId, role)
+            try {
+                repository.updateUserRole(userId, role)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _error.value = "Failed to update role: ${e.message}"
+            }
         }
     }
 

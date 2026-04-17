@@ -81,4 +81,10 @@ class DevotionalViewModel(
             repository.addComment(comment)
         }
     }
+
+    fun updateLikes(devotionalId: String, newCount: Int) {
+        viewModelScope.launch {
+            repository.updateLikes(devotionalId, newCount)
+        }
+    }
 }

@@ -84,7 +84,7 @@ fun DevotionalsScreen(
         DevotionalDetail(
             devotional = selectedDevotional!!,
             onBack = { selectedDevotional = null },
-            onLike = { /* viewModel.updateLikes(it.id, it.likesCount + 1) */ },
+            onLike = { viewModel.updateLikes(it.id, it.likesCount + 1) },
             comments = comments,
             onAddComment = { text -> viewModel.addComment(selectedDevotional!!.id, currentUser.username, text) },
             canEdit = selectedDevotional!!.ownerId == currentUser.id,

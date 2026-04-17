@@ -8,6 +8,10 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.appcheck.appCheck
 import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
 import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreSettings
+import com.google.firebase.firestore.MemoryCacheSettings
+import com.google.firebase.firestore.PersistentCacheSettings
 
 class KairosApplication : Application() {
     lateinit var database: AppDatabase
@@ -17,6 +21,12 @@ class KairosApplication : Application() {
         super.onCreate()
         
         FirebaseApp.initializeApp(this)
+
+        val settings = FirebaseFirestoreSettings.Builder()
+            .setLocalCacheSettings(PersistentCacheSettings.newBuilder().build())
+            .build()
+        FirebaseFirestore.getInstance().firestoreSettings = settings
+
         val firebaseAppCheck = Firebase.appCheck
         if (BuildConfig.DEBUG) {
             firebaseAppCheck.installAppCheckProviderFactory(
